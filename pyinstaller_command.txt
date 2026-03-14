@@ -4,8 +4,6 @@
 pyinstaller --noconfirm --windowed --name MonsterCalc --icon Monster.ico \
   --add-data "Monster.png:." \
   --add-data "MonsterHeader.png:." \
-  --add-data "MonsterCalc.PNG:." \
-  --add-data "Functions.png:." \
   --add-data "demo.txt:." \
   --add-data "release_notes.txt:." \
   MonsterCalc.py

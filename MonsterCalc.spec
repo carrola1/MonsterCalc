@@ -4,8 +4,6 @@
 datas = [
     ("Monster.png", "."),
     ("MonsterHeader.png", "."),
-    ("MonsterCalc.PNG", "."),
-    ("Functions.png", "."),
     ("demo.txt", "."),
     ("release_notes.txt", "."),
 ]

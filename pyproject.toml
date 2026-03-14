@@ -42,10 +42,8 @@ py-modules = [
 
 [tool.setuptools.data-files]
 "." = [
-    "Functions.png",
     "Monster.png",
     "MonsterHeader.png",
-    "MonsterCalc.PNG",
     "demo.txt",
     "release_notes.txt",
 ]
