@@ -1,3 +1,11 @@
+v2.0 Mar 2026
+    - [General]: Modernized PySide6 UI refresh across macOS, Linux, and Windows
+    - [Feature]: Added automated tests for engine logic and UI smoke coverage
+    - [Feature]: Added inline autocomplete and live function argument hints
+    - [Feature]: Added lighter helper hints for built-in functions in the results pane
+    - [Bug Fix]: Fixed live-edit crashes on incomplete expressions such as abs(
+    - [Bug Fix]: Corrected resistor-divider search results for higher resistor decades
+
 v1.10 Oct 2023
     - [General] Updates to better support running on Linux
 

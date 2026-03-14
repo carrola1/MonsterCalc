@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
+
 import toolButtons
 import keywords
 
@@ -25,6 +28,212 @@ TITLE_FONT_FAMILIES = [
     "Times New Roman",
 ]
 
+TOKEN_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)$")
+TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")
+
+
+@dataclass(frozen=True, slots=True)
+class InlineCompletion:
+    token: str
+    ghost_text: str
+    insert_text: str
+
+
+def find_inline_completion(
+    line_text: str,
+    cursor_column: int,
+    signatures: dict[str, str],
+) -> InlineCompletion | None:
+    before_cursor = line_text[:cursor_column]
+    after_cursor = line_text[cursor_column:]
+
+    if after_cursor and TOKEN_CONTINUATION_RE.match(after_cursor):
+        return None
+
+    call_completion = _find_call_argument_hint(before_cursor, after_cursor, signatures)
+    if call_completion is not None:
+        return call_completion
+
+    match = TOKEN_RE.search(before_cursor)
+    if match is None:
+        return None
+
+    fragment = match.group(1)
+    if len(fragment) < 3:
+        return None
+
+    matches = [token for token in signatures if token.startswith(fragment)]
+    if len(matches) != 1:
+        return None
+
+    token = matches[0]
+    signature = signatures[token]
+
+    if fragment == token:
+        return InlineCompletion(token=token, ghost_text=signature, insert_text="(")
+
+    return InlineCompletion(
+        token=token,
+        ghost_text=f"{token[len(fragment):]}{signature}",
+        insert_text=token[len(fragment):],
+    )
+
+
+def _find_call_argument_hint(
+    before_cursor: str,
+    after_cursor: str,
+    signatures: dict[str, str],
+) -> InlineCompletion | None:
+    if after_cursor and not after_cursor.isspace():
+        return None
+
+    call_context = _find_open_call(before_cursor, signatures)
+    if call_context is None:
+        return None
+
+    token, argument_text = call_context
+    remaining_signature = _remaining_signature(signatures[token], argument_text)
+    if remaining_signature is None:
+        return None
+
+    return InlineCompletion(
+        token=token,
+        ghost_text=remaining_signature,
+        insert_text="",
+    )
+
+
+def _find_open_call(
+    before_cursor: str,
+    signatures: dict[str, str],
+) -> tuple[str, str] | None:
+    depth = 0
+    for index in range(len(before_cursor) - 1, -1, -1):
+        char = before_cursor[index]
+        if char == ")":
+            depth += 1
+        elif char == "(":
+            if depth > 0:
+                depth -= 1
+                continue
+
+            token_match = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*$", before_cursor[:index])
+            if token_match is None:
+                return None
+
+            token = token_match.group(1)
+            if token not in signatures:
+                return None
+
+            return token, before_cursor[index + 1 :]
+    return None
+
+
+def _remaining_signature(signature: str, argument_text: str) -> str | None:
+    params = [param.strip() for param in signature.strip()[1:-1].split(",") if param.strip()]
+    if not params:
+        return None
+
+    arg_index, current_fragment = _argument_progress(argument_text)
+    if arg_index >= len(params):
+        return None
+    if current_fragment:
+        if arg_index + 1 >= len(params):
+            return None
+        return ", " + ", ".join(params[arg_index + 1 :]) + ")"
+
+    return ", ".join(params[arg_index:]) + ")"
+
+
+def _argument_progress(argument_text: str) -> tuple[int, str]:
+    depth = 0
+    arg_index = 0
+    current_fragment_chars: list[str] = []
+
+    for char in argument_text:
+        if char == "," and depth == 0:
+            arg_index += 1
+            current_fragment_chars = []
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")" and depth > 0:
+            depth -= 1
+        current_fragment_chars.append(char)
+
+    return arg_index, "".join(current_fragment_chars).strip()
+
+
+class ScratchpadTextEdit(QPlainTextEdit):
+    def __init__(self, signatures: dict[str, str]):
+        super().__init__()
+        self.signatures = signatures
+        self.inline_completion: InlineCompletion | None = None
+        self.completionLabel = QLabel(self.viewport())
+        self.completionLabel.hide()
+        self.completionLabel.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self.completionLabel.setStyleSheet(
+            "color: #7f8790; background-color: transparent; padding: 0px;"
+        )
+
+        self.textChanged.connect(self._refresh_completion)
+        self.cursorPositionChanged.connect(self._refresh_completion)
+        self.verticalScrollBar().valueChanged.connect(self._refresh_completion)
+        self.horizontalScrollBar().valueChanged.connect(self._refresh_completion)
+
+    def keyPressEvent(self, event) -> None:
+        if (
+            event.key() == Qt.Key.Key_Tab
+            and self.inline_completion is not None
+            and self.inline_completion.insert_text
+            and self.textCursor().hasSelection() is False
+        ):
+            self.insertPlainText(self.inline_completion.insert_text)
+            self._refresh_completion()
+            return
+        super().keyPressEvent(event)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._refresh_completion()
+
+    def focusOutEvent(self, event) -> None:
+        super().focusOutEvent(event)
+        self.completionLabel.hide()
+
+    def _refresh_completion(self, *_args) -> None:
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            self.inline_completion = None
+            self.completionLabel.hide()
+            return
+
+        block = cursor.block()
+        completion = find_inline_completion(
+            block.text(),
+            cursor.positionInBlock(),
+            self.signatures,
+        )
+        self.inline_completion = completion
+        if completion is None:
+            self.completionLabel.hide()
+            return
+
+        cursor_rect = self.cursorRect(cursor)
+        if cursor_rect.isNull():
+            self.completionLabel.hide()
+            return
+
+        self.completionLabel.setFont(self.font())
+        self.completionLabel.setText(completion.ghost_text)
+        self.completionLabel.adjustSize()
+        label_pos = cursor_rect.topLeft()
+        self.completionLabel.move(label_pos.x(), label_pos.y())
+        if label_pos.x() >= self.viewport().width() or label_pos.y() >= self.viewport().height():
+            self.completionLabel.hide()
+            return
+        self.completionLabel.show()
+
 
 class MainWidget(QWidget):
     def __init__(self):
@@ -33,7 +242,7 @@ class MainWidget(QWidget):
         self.engine = CalculationEngine(EngineConfig())
         self.last_evaluations = []
 
-        self.textEdit = QPlainTextEdit()
+        self.textEdit = ScratchpadTextEdit(toolButtons.TOKEN_SIGNATURES)
         self.resDisp = QPlainTextEdit()
         self.headerIcon = QLabel()
         self.headerTitle = QLabel("MONSTER CALC")
@@ -122,7 +331,11 @@ class MainWidget(QWidget):
         self.textEdit.setTabStopDistance(32)
         self.textEdit.setPlaceholderText(
             "Type one expression per line.\n"
-            "Examples: 10k, vdiv(5, 10k, 10k), 50 mm to in, x = 2*pi"
+            "Examples:\n"
+            "10k\n"
+            "vdiv(5, 10k, 10k)\n"
+            "50 mm to in\n"
+            "x = 2*pi"
         )
 
         self.resDisp.setFont(editor_font)
@@ -306,7 +519,7 @@ class MainWidget(QWidget):
         if not clean_line or clean_line in {"e", "pi"}:
             return ""
 
-        hint = toolButtons.TOKEN_HINTS.get(clean_line)
+        hint = toolButtons.TOKEN_RESULT_HINTS.get(clean_line)
         if hint is None:
             return ""
 

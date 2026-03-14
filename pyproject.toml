@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monstercalc"
+version = "2.0.0"
+description = "A desktop scratchpad calculator for math, units, programming, and EE helpers."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["PySide6>=6.8"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "pytest-qt>=4.5",
+]
+
+[project.scripts]
+monstercalc = "MonsterCalc:main"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+minversion = "9.0"
+pythonpath = ["."]
+testpaths = ["tests"]
+qt_api = "pyside6"
+
+[tool.setuptools]
+py-modules = [
+    "MonsterCalc",
+    "app_paths",
+    "calc",
+    "engine",
+    "keywords",
+    "myfuncs",
+    "resistors",
+    "syntaxhighlighter",
+    "toolButtons",
+    "qt_compat",
+]
+
+[tool.setuptools.data-files]
+"." = [
+    "Functions.png",
+    "Monster.png",
+    "MonsterHeader.png",
+    "MonsterCalc.PNG",
+    "demo.txt",
+    "release_notes.txt",
+]

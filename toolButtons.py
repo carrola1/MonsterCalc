@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from qt_compat import QAction, QMenu, QToolButton
 
 
@@ -191,6 +193,52 @@ def _build_token_hints(
 TOKEN_HINTS = _build_token_hints(
     (FUNCTION_SECTIONS, EE_SECTIONS, SYMBOL_SECTIONS, UNIT_SECTIONS)
 )
+
+
+def _build_result_hints(hints: dict[str, str]) -> dict[str, str]:
+    return {
+        token: re.sub(r"\s*\([^)]*\)", "", description).strip()
+        for token, description in hints.items()
+    }
+
+
+TOKEN_RESULT_HINTS = _build_result_hints(TOKEN_HINTS)
+
+TOKEN_SIGNATURES = {
+    "floor": "(value)",
+    "ceil": "(value)",
+    "min": "(value1, value2, ...)",
+    "max": "(value1, value2, ...)",
+    "sum": "(list)",
+    "sqrt": "(value)",
+    "abs": "(value)",
+    "log": "(value)",
+    "log10": "(value)",
+    "log2": "(value)",
+    "exp": "(value)",
+    "phase": "(value)",
+    "rect": "(mag, ang)",
+    "polar": "(value)",
+    "sin": "(angle)",
+    "cos": "(angle)",
+    "tan": "(angle)",
+    "asin": "(value)",
+    "acos": "(value)",
+    "atan": "(value)",
+    "rad": "(deg)",
+    "deg": "(rad)",
+    "cdf": "(std_dev)",
+    "pdf": "(std_dev)",
+    "findres": "(target, tol)",
+    "vdiv": "(vin, R1, R2)",
+    "rpar": "(R1, R2, R3...)",
+    "findrdiv": "(vin, vout, tol)",
+    "hex": "(value)",
+    "bin": "(value)",
+    "bitget": "(value, msb, lsb)",
+    "a2h": "(text)",
+    "h2a": "(hex_text)",
+}
 
 
 def _build_menu(tool_button: QToolButton, sections: list[tuple[str, list[tuple[str, str]]]]) -> QMenu:

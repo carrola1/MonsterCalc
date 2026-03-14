@@ -12,6 +12,7 @@ from qt_compat import QMessageBox, QPainter, QPixmap, QSettings, Qt, QUrl, confi
 
 
 APP_NAME = "MonsterCalc"
+APP_VERSION = "2.0"
 ORG_NAME = "Andrew Carroll"
 LEGACY_SETTINGS = ("company", "MonsterCalc")
 
@@ -340,7 +341,7 @@ class MainWindow(QMainWindow):
         msgBox.setIconPixmap(self.monster_icon)
         msgBox.setWindowTitle("About")
         msgBox.setText(
-            "MonsterCalc\n\n"
+            f"MonsterCalc {APP_VERSION}\n\n"
             "A fast scratchpad calculator for math, units, electronics, and programming.\n"
             "Created by Andrew Carroll."
         )
