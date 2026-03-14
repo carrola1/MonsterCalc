@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+
 
 datas = [
     ("Monster.png", "."),
@@ -10,6 +12,7 @@ datas = [
 ]
 
 hiddenimports = []
+icon_file = "Monster.icns" if sys.platform == "darwin" else "Monster.ico"
 
 a = Analysis(
     ["MonsterCalc.py"],
@@ -37,5 +40,14 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    icon="Monster.ico",
+    icon=icon_file,
 )
+
+if sys.platform == "darwin":
+    app = BUNDLE(
+        exe,
+        name="MonsterCalc.app",
+        icon=icon_file,
+        bundle_identifier="com.andrewcarroll.monstercalc",
+        info_plist={"NSHighResolutionCapable": "True"},
+    )
