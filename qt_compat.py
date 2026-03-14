@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 
@@ -19,6 +20,9 @@ try:
     QT_API = "PySide6"
     _PLUGIN_ROOT = Path(_qt_package.__file__).resolve().parent / "Qt" / "plugins"
 except ImportError:
+    if getattr(sys, "frozen", False):
+        raise
+
     import PyQt6 as _qt_package
 
     from PyQt6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker, Qt, QUrl
