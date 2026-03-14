@@ -10,6 +10,13 @@ def test_engine_supports_assignments_and_ans():
     assert [line.display for line in results] == ["300", "10k", "50", "15k", "15.005k"]
 
 
+def test_engine_supports_line_number_references():
+    engine = CalculationEngine()
+    results = engine.evaluate_document("10\n20\nline1 + line2")
+
+    assert [line.display for line in results] == ["10", "20", "30"]
+
+
 def test_engine_supports_unit_conversions():
     engine = CalculationEngine()
     results = engine.evaluate_document("50 mm to in\n70 kg to lbs\n70 F to C\n1 KB to bits")

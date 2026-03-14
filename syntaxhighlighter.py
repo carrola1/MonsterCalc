@@ -61,6 +61,8 @@ class KeywordHighlighter(QSyntaxHighlighter):
                 )
             )
 
+        rules.append((QRegularExpression(r"\bline\d+\b"), self.styles["userSyms"]))
+
         for expression, text_format in rules:
             match_iterator = expression.globalMatch(text)
             while match_iterator.hasNext():

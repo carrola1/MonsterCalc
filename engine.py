@@ -63,13 +63,22 @@ class CalculationEngine:
         state = EvaluationState()
         evaluations: list[LineEvaluation] = []
 
-        for line in lines:
+        for line_number, line in enumerate(lines, start=1):
             evaluation = self.evaluate_line(line, state)
             if evaluation.error is None and evaluation.display:
                 state.ans = evaluation.value
+            if self._stores_line_reference(evaluation):
+                state.variables[f"line{line_number}"] = evaluation.value
             evaluations.append(evaluation)
 
         return evaluations
+
+    def _stores_line_reference(self, evaluation: LineEvaluation) -> bool:
+        return (
+            evaluation.error is None
+            and evaluation.value is not None
+            and not callable(evaluation.value)
+        )
 
     def evaluate_line(
         self,

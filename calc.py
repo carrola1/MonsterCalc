@@ -8,8 +8,8 @@ import keywords
 
 from app_paths import resource_path
 from engine import CalculationEngine, EngineConfig, strip_inline_comment
-from qt_compat import QFont, QGridLayout, QLabel, QMenu, QPlainTextEdit, QPixmap
-from qt_compat import QSignalBlocker, QSplitter, QToolButton, Qt, QWidget
+from qt_compat import QColor, QFont, QGridLayout, QLabel, QMenu, QPainter, QPlainTextEdit
+from qt_compat import QPixmap, QRect, QSignalBlocker, QSize, QSplitter, QToolButton, Qt, QWidget
 from syntaxhighlighter import KeywordHighlighter, ResultHighlighter
 
 
@@ -169,6 +169,8 @@ class ScratchpadTextEdit(QPlainTextEdit):
         super().__init__()
         self.signatures = signatures
         self.inline_completion: InlineCompletion | None = None
+        self._lastInsertionPosition = 0
+        self.lineNumberArea = LineNumberArea(self)
         self.completionLabel = QLabel(self.viewport())
         self.completionLabel.hide()
         self.completionLabel.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -176,10 +178,32 @@ class ScratchpadTextEdit(QPlainTextEdit):
             "color: #7f8790; background-color: transparent; padding: 0px;"
         )
 
+        self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
+        self.updateRequest.connect(self.updateLineNumberArea)
         self.textChanged.connect(self._refresh_completion)
         self.cursorPositionChanged.connect(self._refresh_completion)
+        self.cursorPositionChanged.connect(self._remember_cursor_position)
         self.verticalScrollBar().valueChanged.connect(self._refresh_completion)
         self.horizontalScrollBar().valueChanged.connect(self._refresh_completion)
+
+        self.updateLineNumberAreaWidth(0)
+        self._remember_cursor_position()
+
+    def lineNumberAreaWidth(self) -> int:
+        digits = max(2, len(str(max(1, self.blockCount()))))
+        return 12 + self.fontMetrics().horizontalAdvance("9") * digits
+
+    def updateLineNumberAreaWidth(self, _block_count: int) -> None:
+        self.setViewportMargins(self.lineNumberAreaWidth(), 0, 0, 0)
+
+    def updateLineNumberArea(self, rect, dy: int) -> None:
+        if dy:
+            self.lineNumberArea.scroll(0, dy)
+        else:
+            self.lineNumberArea.update(0, rect.y(), self.lineNumberArea.width(), rect.height())
+
+        if rect.contains(self.viewport().rect()):
+            self.updateLineNumberAreaWidth(0)
 
     def keyPressEvent(self, event) -> None:
         if (
@@ -195,11 +219,73 @@ class ScratchpadTextEdit(QPlainTextEdit):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
+        rect = self.contentsRect()
+        self.lineNumberArea.setGeometry(
+            QRect(rect.left(), rect.top(), self.lineNumberAreaWidth(), rect.height())
+        )
         self._refresh_completion()
 
     def focusOutEvent(self, event) -> None:
         super().focusOutEvent(event)
         self.completionLabel.hide()
+
+    def lineNumberAreaPaintEvent(self, event) -> None:
+        painter = QPainter(self.lineNumberArea)
+        painter.fillRect(event.rect(), QColor("#1b1c1d"))
+
+        block = self.firstVisibleBlock()
+        block_number = block.blockNumber()
+        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
+        bottom = top + int(self.blockBoundingRect(block).height())
+
+        active_line = self.textCursor().blockNumber()
+        while block.isValid() and top <= event.rect().bottom():
+            if block.isVisible() and bottom >= event.rect().top():
+                number = str(block_number + 1)
+                color = QColor("#98ad43") if block_number == active_line else QColor("#6f7680")
+                painter.setPen(color)
+                painter.drawText(
+                    0,
+                    top,
+                    self.lineNumberArea.width() - 6,
+                    self.fontMetrics().height(),
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                    number,
+                )
+
+            block = block.next()
+            top = bottom
+            bottom = top + int(self.blockBoundingRect(block).height())
+            block_number += 1
+
+    def lineNumberForY(self, y_pos: int) -> int | None:
+        block = self.firstVisibleBlock()
+        block_number = block.blockNumber()
+        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
+        bottom = top + int(self.blockBoundingRect(block).height())
+
+        while block.isValid():
+            if block.isVisible() and top <= y_pos <= bottom:
+                return block_number + 1
+            if top > y_pos:
+                return None
+
+            block = block.next()
+            top = bottom
+            bottom = top + int(self.blockBoundingRect(block).height())
+            block_number += 1
+
+        return None
+
+    def insertLineReference(self, line_number: int) -> None:
+        cursor = self.textCursor()
+        if not self.hasFocus():
+            max_position = len(self.toPlainText())
+            cursor.setPosition(min(self._lastInsertionPosition, max_position))
+            self.setTextCursor(cursor)
+        self.insertPlainText(f"line{line_number}")
+        self.setFocus()
+        self._remember_cursor_position()
 
     def _refresh_completion(self, *_args) -> None:
         cursor = self.textCursor()
@@ -233,6 +319,27 @@ class ScratchpadTextEdit(QPlainTextEdit):
             self.completionLabel.hide()
             return
         self.completionLabel.show()
+
+    def _remember_cursor_position(self) -> None:
+        self._lastInsertionPosition = self.textCursor().position()
+
+
+class LineNumberArea(QWidget):
+    def __init__(self, editor: ScratchpadTextEdit):
+        super().__init__(editor)
+        self.editor = editor
+
+    def sizeHint(self) -> QSize:
+        return QSize(self.editor.lineNumberAreaWidth(), 0)
+
+    def paintEvent(self, event) -> None:
+        self.editor.lineNumberAreaPaintEvent(event)
+
+    def mousePressEvent(self, event) -> None:
+        line_number = self.editor.lineNumberForY(int(event.position().y()))
+        if line_number is not None:
+            self.editor.insertLineReference(line_number)
+        super().mousePressEvent(event)
 
 
 class MainWidget(QWidget):

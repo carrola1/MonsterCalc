@@ -9,7 +9,7 @@ QT_API = ""
 try:
     import PySide6 as _qt_package
 
-    from PySide6.QtCore import QRegularExpression, QSettings, QSignalBlocker, Qt, QUrl
+    from PySide6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker, Qt, QUrl
     from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
     from PySide6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
     from PySide6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog
@@ -21,7 +21,7 @@ try:
 except ImportError:
     import PyQt6 as _qt_package
 
-    from PyQt6.QtCore import QRegularExpression, QSettings, QSignalBlocker, Qt, QUrl
+    from PyQt6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker, Qt, QUrl
     from PyQt6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
     from PyQt6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
     from PyQt6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog

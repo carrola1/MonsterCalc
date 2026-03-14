@@ -55,3 +55,16 @@ def test_main_widget_uses_compact_placeholder_text(qtbot):
         "50 mm to in\n"
         "x = 2*pi"
     )
+
+
+def test_main_widget_can_insert_line_reference_token(qtbot):
+    widget = MainWidget()
+    qtbot.addWidget(widget)
+    widget.textEdit.setPlainText("10\n20\n")
+    cursor = widget.textEdit.textCursor()
+    cursor.setPosition(len(widget.textEdit.toPlainText()))
+    widget.textEdit.setTextCursor(cursor)
+
+    widget.textEdit.insertLineReference(1)
+
+    assert widget.textEdit.toPlainText().endswith("line1")

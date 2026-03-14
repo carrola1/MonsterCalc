@@ -4,6 +4,7 @@ y = 10k     # this is an inline comment
 z = 50
 tot = x*z
 ans + 5	   # 'ans' references prev line
+line1 + line3   # line refs use previous result lines
 
 #Conversion Examples
 50 mm to in
