@@ -9,7 +9,8 @@ import keywords
 from app_paths import resource_path
 from engine import CalculationEngine, EngineConfig, strip_inline_comment
 from qt_compat import QColor, QFont, QGridLayout, QLabel, QMenu, QPainter, QPlainTextEdit
-from qt_compat import QPixmap, QRect, QSignalBlocker, QSize, QSplitter, QToolButton, Qt, QWidget
+from qt_compat import QPixmap, QRect, QSignalBlocker, QSize, QSplitter, QToolButton, QToolTip
+from qt_compat import Qt, QWidget
 from syntaxhighlighter import KeywordHighlighter, ResultHighlighter
 
 
@@ -30,6 +31,7 @@ TITLE_FONT_FAMILIES = [
 
 TOKEN_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)$")
 TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")
+HOVER_TOKEN_RE = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +39,25 @@ class InlineCompletion:
     token: str
     ghost_text: str
     insert_text: str
+
+
+def token_at_column(line_text: str, column: int) -> str | None:
+    for match in HOVER_TOKEN_RE.finditer(line_text):
+        if match.start() <= column < match.end():
+            return match.group(0)
+    return None
+
+
+def build_hover_previews(evaluations) -> dict[str, str]:
+    previews: dict[str, str] = {}
+    for line_number, evaluation in enumerate(evaluations, start=1):
+        if evaluation.display:
+            previews[f"line{line_number}"] = f"line{line_number} = {evaluation.display}"
+        if evaluation.assignment_name and evaluation.display:
+            previews[evaluation.assignment_name] = (
+                f"{evaluation.assignment_name} = {evaluation.display}"
+            )
+    return previews
 
 
 def find_inline_completion(
@@ -168,6 +189,7 @@ class ScratchpadTextEdit(QPlainTextEdit):
     def __init__(self, signatures: dict[str, str]):
         super().__init__()
         self.signatures = signatures
+        self.hoverPreviews: dict[str, str] = {}
         self.inline_completion: InlineCompletion | None = None
         self._lastInsertionPosition = 0
         self.lineNumberArea = LineNumberArea(self)
@@ -186,6 +208,8 @@ class ScratchpadTextEdit(QPlainTextEdit):
         self.verticalScrollBar().valueChanged.connect(self._refresh_completion)
         self.horizontalScrollBar().valueChanged.connect(self._refresh_completion)
 
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
         self.updateLineNumberAreaWidth(0)
         self._remember_cursor_position()
 
@@ -228,6 +252,15 @@ class ScratchpadTextEdit(QPlainTextEdit):
     def focusOutEvent(self, event) -> None:
         super().focusOutEvent(event)
         self.completionLabel.hide()
+        QToolTip.hideText()
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        QToolTip.hideText()
+
+    def mouseMoveEvent(self, event) -> None:
+        super().mouseMoveEvent(event)
+        self._update_hover_preview(event)
 
     def lineNumberAreaPaintEvent(self, event) -> None:
         painter = QPainter(self.lineNumberArea)
@@ -287,6 +320,9 @@ class ScratchpadTextEdit(QPlainTextEdit):
         self.setFocus()
         self._remember_cursor_position()
 
+    def setHoverPreviews(self, previews: dict[str, str]) -> None:
+        self.hoverPreviews = previews
+
     def _refresh_completion(self, *_args) -> None:
         cursor = self.textCursor()
         if cursor.hasSelection():
@@ -322,6 +358,20 @@ class ScratchpadTextEdit(QPlainTextEdit):
 
     def _remember_cursor_position(self) -> None:
         self._lastInsertionPosition = self.textCursor().position()
+
+    def _update_hover_preview(self, event) -> None:
+        cursor = self.cursorForPosition(event.position().toPoint())
+        token = token_at_column(cursor.block().text(), cursor.positionInBlock())
+        if token is None:
+            QToolTip.hideText()
+            return
+
+        preview = self.hoverPreviews.get(token)
+        if preview is None:
+            QToolTip.hideText()
+            return
+
+        QToolTip.showText(event.globalPosition().toPoint(), preview, self)
 
 
 class LineNumberArea(QWidget):
@@ -614,6 +664,7 @@ class MainWidget(QWidget):
     def updateResults(self) -> None:
         text = self.textEdit.toPlainText()
         self.last_evaluations = self.engine.evaluate_document(text)
+        self.textEdit.setHoverPreviews(build_hover_previews(self.last_evaluations))
         result_text = "\n".join(self._display_text_for_line(evaluation) for evaluation in self.last_evaluations)
         with QSignalBlocker(self.resDisp):
             self.resDisp.setPlainText(result_text)

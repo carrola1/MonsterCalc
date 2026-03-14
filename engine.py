@@ -46,6 +46,7 @@ class LineEvaluation:
     value: Any = None
     display: str = ""
     error: str | None = None
+    assignment_name: str | None = None
 
 
 @dataclass(slots=True)
@@ -96,6 +97,7 @@ class CalculationEngine:
         if assignment:
             variable_name = assignment.group("name")
             expression = assignment.group("expr").strip()
+            evaluation.assignment_name = variable_name
             try:
                 value = self._evaluate_expression(expression, current_state)
             except Exception as exc:  # noqa: BLE001 - preserve blank-on-error UX

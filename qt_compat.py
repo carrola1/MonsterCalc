@@ -14,7 +14,7 @@ try:
     from PySide6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
     from PySide6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog
     from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPlainTextEdit, QSplitter
-    from PySide6.QtWidgets import QMenu, QToolButton, QWidget
+    from PySide6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
 
     QT_API = "PySide6"
     _PLUGIN_ROOT = Path(_qt_package.__file__).resolve().parent / "Qt" / "plugins"
@@ -26,7 +26,7 @@ except ImportError:
     from PyQt6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
     from PyQt6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog
     from PyQt6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPlainTextEdit, QSplitter
-    from PyQt6.QtWidgets import QMenu, QToolButton, QWidget
+    from PyQt6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
 
     QT_API = "PyQt6"
     _PLUGIN_ROOT = Path(_qt_package.__file__).resolve().parent / "Qt6" / "plugins"
