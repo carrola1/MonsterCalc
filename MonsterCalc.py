@@ -15,6 +15,7 @@ APP_NAME = "MonsterCalc"
 APP_VERSION = "2.0"
 ORG_NAME = "Andrew Carroll"
 LEGACY_SETTINGS = ("company", "MonsterCalc")
+PACKAGED_WELCOME_KEY = "packaged_welcome_initialized"
 
 
 def _coerce_bool(value, default: bool) -> bool:
@@ -81,35 +82,10 @@ class MainWindow(QMainWindow):
         return icon
 
     def _apply_window_style(self) -> None:
-        self.setStyleSheet(
+        style = [
             """
             QMainWindow {
                 background-color: #2f3032;
-            }
-
-            QMenuBar {
-                background-color: #2f3032;
-                color: #f2f2f2;
-                border-bottom: 1px solid #111111;
-            }
-
-            QMenuBar::item {
-                background-color: transparent;
-                padding: 4px 10px;
-            }
-
-            QMenuBar::item:selected {
-                background-color: #202020;
-            }
-
-            QMenu {
-                background-color: #2f3032;
-                color: #e0e0e0;
-                border: 1px solid #111111;
-            }
-
-            QMenu::item:selected {
-                background-color: #202020;
             }
 
             QStatusBar {
@@ -117,7 +93,39 @@ class MainWindow(QMainWindow):
                 color: #c2c4c7;
             }
             """
-        )
+        ]
+
+        if not sys.platform.startswith("win"):
+            style.append(
+                """
+                QMenuBar {
+                    background-color: #2f3032;
+                    color: #f2f2f2;
+                    border-bottom: 1px solid #111111;
+                }
+
+                QMenuBar::item {
+                    background-color: transparent;
+                    padding: 4px 10px;
+                }
+
+                QMenuBar::item:selected {
+                    background-color: #202020;
+                }
+
+                QMenu {
+                    background-color: #2f3032;
+                    color: #e0e0e0;
+                    border: 1px solid #111111;
+                }
+
+                QMenu::item:selected {
+                    background-color: #202020;
+                }
+                """
+            )
+
+        self.setStyleSheet("".join(style))
 
     def _create_actions(self) -> None:
         self.openAction = QAction("Open…", self)
@@ -232,6 +240,11 @@ class MainWindow(QMainWindow):
             self._setting_value("welcome_on_startup"),
             True,
         )
+        if getattr(sys, "frozen", False) and not _coerce_bool(
+            self.settings.value(PACKAGED_WELCOME_KEY),
+            False,
+        ):
+            self.welcome_on_startup = True
 
         geometry = self.settings.value("window_geometry")
         if geometry is not None:
@@ -347,6 +360,8 @@ class MainWindow(QMainWindow):
         self.settings.setValue("res_format", self.editor.resFormat)
         self.settings.setValue("conv_xor_to_exp", self.editor.convXorToExp)
         self.settings.setValue("welcome_on_startup", self.welcome_on_startup)
+        if getattr(sys, "frozen", False):
+            self.settings.setValue(PACKAGED_WELCOME_KEY, True)
         self.settings.setValue("window_geometry", self.saveGeometry())
 
     def about(self) -> None:
@@ -405,7 +420,10 @@ def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(APP_NAME)
     app.setOrganizationName(ORG_NAME)
-    app.setStyle("Fusion")
+    if sys.platform.startswith("win"):
+        app.setStyle("WindowsVista")
+    else:
+        app.setStyle("Fusion")
 
     window = MainWindow()
     if sys.platform.startswith("win"):
