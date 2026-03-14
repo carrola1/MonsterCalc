@@ -9,6 +9,7 @@ ASSETS = {
     "header_icon": APP_DIR / "MonsterHeader.png",
     "demo": APP_DIR / "demo.txt",
     "release_notes": APP_DIR / "release_notes.txt",
+    "user_guide": APP_DIR / "UserGuide.html",
 }
 
 

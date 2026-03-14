@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MonsterCalc User Guide</title>
+  <style>
+    :root {
+      --bg: #232426;
+      --panel: #2f3032;
+      --panel-alt: #383a3d;
+      --text: #ececec;
+      --muted: #b8bcc2;
+      --accent: #a7c53f;
+      --border: #141414;
+      --code: #1a1b1d;
+      --hint: #ffca70;
+      --link: #d6ec7d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #222325 0%, #1b1c1e 100%);
+      color: var(--text);
+      font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #313336 0%, #27282b 100%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 28px 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      font-family: "Palatino", "Baskerville", Georgia, serif;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    h1 {
+      color: var(--accent);
+      font-size: 2.3rem;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: var(--accent);
+      font-size: 1.5rem;
+    }
+
+    h3 {
+      margin-top: 24px;
+      color: #f4f4f4;
+      font-size: 1.1rem;
+    }
+
+    p, li {
+      color: var(--muted);
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      max-width: 56rem;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .nav a {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #1b1c1d;
+      background: #202124;
+      color: var(--link);
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .panel {
+      margin-top: 22px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+    }
+
+    code, pre {
+      font-family: "SF Mono", Menlo, Consolas, Monaco, monospace;
+    }
+
+    code {
+      background: var(--code);
+      color: #f7f7f7;
+      padding: 0.1rem 0.35rem;
+      border-radius: 5px;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 14px 16px;
+      background: var(--code);
+      border: 1px solid #111;
+      border-radius: 10px;
+      overflow-x: auto;
+      color: #f0f0f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: var(--panel-alt);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      border-bottom: 1px solid #232427;
+      vertical-align: top;
+    }
+
+    th {
+      background: #26272a;
+      color: #f4f4f4;
+      font-size: 0.95rem;
+    }
+
+    td code {
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .card {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .tip {
+      color: var(--hint);
+    }
+
+    ul {
+      padding-left: 1.2rem;
+    }
+
+    @media (max-width: 720px) {
+      .wrap {
+        padding: 18px 14px 36px;
+      }
+
+      .hero, .panel {
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>MonsterCalc User Guide</h1>
+      <p class="lead">
+        MonsterCalc is a live scratchpad calculator for technical work. Type one expression per line in the left pane and the result appears on the matching line in the right pane.
+      </p>
+      <div class="nav">
+        <a href="#quick-start">Quick Start</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#keywords">Keywords</a>
+        <a href="#functions">Functions</a>
+        <a href="#units">Units</a>
+        <a href="#tips">Tips</a>
+      </div>
+    </section>
+
+    <section class="panel" id="quick-start">
+      <h2>Quick Start</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Basic Math</h3>
+          <pre>2 + 2
+sqrt(81)
+10k / 5</pre>
+        </div>
+        <div class="card">
+          <h3>Variables</h3>
+          <pre>x = 300
+y = 10k
+x * y</pre>
+        </div>
+        <div class="card">
+          <h3>Unit Conversion</h3>
+          <pre>50 mm to in
+70 F to C
+1 KB to bits</pre>
+        </div>
+        <div class="card">
+          <h3>Line References</h3>
+          <pre>10
+20
+line1 + line2</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="workflow">
+      <h2>How To Use MonsterCalc</h2>
+      <ul>
+        <li>Type one expression per line. Blank lines are allowed.</li>
+        <li>Results update live as you type.</li>
+        <li>Use <code>ans</code> to reference the most recent successful result.</li>
+        <li>Use <code>line1</code>, <code>line2</code>, and so on to reference successful results by line number.</li>
+        <li>Click a line number in the editor gutter to insert the matching <code>lineX</code> token at the current cursor position.</li>
+        <li>Use the top-right menus for quick insertion of math, symbols, units, and programming helpers.</li>
+        <li>Autocomplete appears inline after a unique three-character match for built-in functions.</li>
+      </ul>
+      <p class="tip">Tip: comments start with <code>#</code>. Example: <code>vdiv(5, 10k, 10k) # voltage divider</code></p>
+    </section>
+
+    <section class="panel" id="keywords">
+      <h2>Keywords And Operators</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Keyword</th>
+            <th>Description</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ans</code></td><td>Most recent successful result.</td><td><code>ans + 5</code></td></tr>
+          <tr><td><code>lineX</code></td><td>Result from a specific line number.</td><td><code>line1 + line3</code></td></tr>
+          <tr><td><code>to</code></td><td>Unit conversion operator.</td><td><code>50 mm to in</code></td></tr>
+          <tr><td><code>0x</code></td><td>Hex literal prefix.</td><td><code>0x12</code></td></tr>
+          <tr><td><code>0b</code></td><td>Binary literal prefix.</td><td><code>0b101</code></td></tr>
+          <tr><td><code>**</code></td><td>Exponentiation.</td><td><code>2**3</code></td></tr>
+          <tr><td><code>%</code></td><td>Modulus.</td><td><code>5 % 2</code></td></tr>
+          <tr><td><code>&lt;&lt;</code></td><td>Shift left.</td><td><code>2 &lt;&lt; 2</code></td></tr>
+          <tr><td><code>&gt;&gt;</code></td><td>Shift right.</td><td><code>8 &gt;&gt; 2</code></td></tr>
+          <tr><td><code>|</code></td><td>Bitwise OR.</td><td><code>8 | 1</code></td></tr>
+          <tr><td><code>&amp;</code></td><td>Bitwise AND.</td><td><code>5 &amp; 1</code></td></tr>
+          <tr><td><code>^</code></td><td>Bitwise XOR, or exponent if the setting is enabled.</td><td><code>5 ^ 1</code></td></tr>
+          <tr><td><code>e</code></td><td>Scientific notation exponent.</td><td><code>5e-3</code></td></tr>
+          <tr><td><code>p n u m k M G</code></td><td>SI suffixes for pico through giga.</td><td><code>4.7k</code>, <code>100n</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel" id="functions">
+      <h2>Functions</h2>
+
+      <h3>General Math</h3>
+      <table>
+        <thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>floor(value)</code></td><td>Round down.</td><td><code>floor(3.9)</code></td></tr>
+          <tr><td><code>ceil(value)</code></td><td>Round up.</td><td><code>ceil(3.1)</code></td></tr>
+          <tr><td><code>min(a, b, ...)</code></td><td>Minimum value.</td><td><code>min(4, 9, 1)</code></td></tr>
+          <tr><td><code>max(a, b, ...)</code></td><td>Maximum value.</td><td><code>max(4, 9, 1)</code></td></tr>
+          <tr><td><code>sum(a, b, ...)</code></td><td>Add multiple values.</td><td><code>sum(100, 200)</code></td></tr>
+          <tr><td><code>sqrt(value)</code></td><td>Square root.</td><td><code>sqrt(81)</code></td></tr>
+          <tr><td><code>abs(value)</code></td><td>Absolute value.</td><td><code>abs(-12)</code></td></tr>
+          <tr><td><code>log(value)</code></td><td>Natural log.</td><td><code>log(e)</code></td></tr>
+          <tr><td><code>log10(value)</code></td><td>Base-10 log.</td><td><code>log10(1000)</code></td></tr>
+          <tr><td><code>log2(value)</code></td><td>Base-2 log.</td><td><code>log2(16)</code></td></tr>
+          <tr><td><code>exp(value)</code></td><td>Exponential <code>e**x</code>.</td><td><code>exp(1)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Trig And Complex</h3>
+      <table>
+        <thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>sin(angle)</code></td><td>Sine.</td><td><code>sin(0.5*pi)</code></td></tr>
+          <tr><td><code>cos(angle)</code></td><td>Cosine.</td><td><code>cos(pi)</code></td></tr>
+          <tr><td><code>tan(angle)</code></td><td>Tangent.</td><td><code>tan(pi/4)</code></td></tr>
+          <tr><td><code>asin(value)</code></td><td>Arc-sine.</td><td><code>asin(1)</code></td></tr>
+          <tr><td><code>acos(value)</code></td><td>Arc-cosine.</td><td><code>acos(0)</code></td></tr>
+          <tr><td><code>atan(value)</code></td><td>Arc-tangent.</td><td><code>atan(1)</code></td></tr>
+          <tr><td><code>rad(deg)</code></td><td>Degrees to radians.</td><td><code>rad(180)</code></td></tr>
+          <tr><td><code>deg(rad)</code></td><td>Radians to degrees.</td><td><code>deg(pi)</code></td></tr>
+          <tr><td><code>phase(value)</code></td><td>Complex phase angle.</td><td><code>phase(3+4j)</code></td></tr>
+          <tr><td><code>rect(mag, ang)</code></td><td>Polar to rectangular.</td><td><code>rect(5, pi/4)</code></td></tr>
+          <tr><td><code>polar(value)</code></td><td>Rectangular to polar.</td><td><code>polar(3+4j)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Probability</h3>
+      <table>
+        <thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>cdf(std_dev)</code></td><td>Normal cumulative distribution.</td><td><code>cdf(1)</code></td></tr>
+          <tr><td><code>pdf(std_dev)</code></td><td>Normal probability density.</td><td><code>pdf(0)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Programming</h3>
+      <table>
+        <thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>hex(value[, width])</code></td><td>Convert to hex string.</td><td><code>hex(255)</code></td></tr>
+          <tr><td><code>bin(value[, width])</code></td><td>Convert to binary string.</td><td><code>bin(5, 8)</code></td></tr>
+          <tr><td><code>bitget(value, msb, lsb)</code></td><td>Extract a bit field.</td><td><code>bitget(0xA, 1, 0)</code></td></tr>
+          <tr><td><code>bitpunch(value, bit, state)</code></td><td>Set or clear one bit. Output follows the input base.</td><td><code>bitpunch(0x01, 7, 1)</code></td></tr>
+          <tr><td><code>a2h(text)</code></td><td>ASCII string to hex bytes.</td><td><code>a2h("test")</code></td></tr>
+          <tr><td><code>h2a(hex_value)</code></td><td>Hex value to ASCII bytes.</td><td><code>h2a(0x74657374)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Electrical</h3>
+      <table>
+        <thead><tr><th>Function</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>findres(target, tol)</code></td><td>Closest standard resistor value.</td><td><code>findres(2.6k, 1)</code></td></tr>
+          <tr><td><code>vdiv(vin, R1, R2)</code></td><td>Voltage divider output.</td><td><code>vdiv(5, 10k, 10k)</code></td></tr>
+          <tr><td><code>rpar(R1, R2, ...)</code></td><td>Parallel resistance.</td><td><code>rpar(10k, 10k)</code></td></tr>
+          <tr><td><code>findrdiv(vin, vout, tol)</code></td><td>Best standard resistor pair for a divider.</td><td><code>findrdiv(5, 3.3, 1)</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel" id="units">
+      <h2>Supported Unit Keywords</h2>
+      <p>Use units by typing them directly into an expression or with the <code>to</code> conversion operator.</p>
+      <table>
+        <thead><tr><th>Category</th><th>Keywords</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Length</td><td><code>mm cm m km mil in ft</code></td><td><code>50 mm to in</code></td></tr>
+          <tr><td>Volume</td><td><code>ml mL l L c pt qt gal oz tsp tbl</code></td><td><code>1 gal to L</code></td></tr>
+          <tr><td>Mass</td><td><code>mg g kg lbs oz</code></td><td><code>70 kg to lbs</code></td></tr>
+          <tr><td>Force</td><td><code>N kN lbf</code></td><td><code>10 lbf to N</code></td></tr>
+          <tr><td>Temperature</td><td><code>C F</code></td><td><code>70 F to C</code></td></tr>
+          <tr><td>Memory</td><td><code>bits bytes KB MB GB TB Kb Mb Gb Tb</code></td><td><code>1 KB to bits</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel" id="tips">
+      <h2>Practical Tips</h2>
+      <ul>
+        <li>Use the result format setting if you prefer scientific, engineering, or SI-style output.</li>
+        <li>If a line is incomplete or invalid while typing, the result stays blank until the expression is valid.</li>
+        <li>The results pane is read-only, but you can copy from it with <code>Ctrl+C</code>.</li>
+        <li>Clicking a line number inserts a <code>lineX</code> reference without moving your current edit position.</li>
+        <li>Autocomplete hints appear in the editor for built-in functions and their expected arguments.</li>
+      </ul>
+      <pre>x = 300
+y = 10k
+vdiv(5, y, y)
+line1 * 2
+bitpunch(0x01, 7, 1)</pre>
+    </section>
+  </div>
+</body>
+</html>

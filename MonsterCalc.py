@@ -188,6 +188,9 @@ class MainWindow(QMainWindow):
         self.demoAction = QAction("Load Demo", self)
         self.demoAction.triggered.connect(lambda: self.welcome(force_load_demo=True))
 
+        self.userGuideAction = QAction("User Guide", self)
+        self.userGuideAction.triggered.connect(self.user_guide)
+
         self.releaseAction = QAction("Release Notes", self)
         self.releaseAction.triggered.connect(self.release_notes)
 
@@ -220,6 +223,7 @@ class MainWindow(QMainWindow):
 
         helpMenu = menubar.addMenu("&Help")
         helpMenu.addAction(self.aboutAction)
+        helpMenu.addAction(self.userGuideAction)
         helpMenu.addAction(self.demoAction)
         helpMenu.addAction(self.releaseAction)
 
@@ -395,6 +399,10 @@ class MainWindow(QMainWindow):
     def release_notes(self) -> None:
         release_path = resource_path("release_notes")
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(release_path)))
+
+    def user_guide(self) -> None:
+        guide_path = resource_path("user_guide")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(guide_path)))
 
     def closeEvent(self, event) -> None:
         self.saveSettings()

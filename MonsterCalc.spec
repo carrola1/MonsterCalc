@@ -6,6 +6,7 @@ datas = [
     ("MonsterHeader.png", "."),
     ("demo.txt", "."),
     ("release_notes.txt", "."),
+    ("UserGuide.html", "."),
 ]
 
 hiddenimports = []
