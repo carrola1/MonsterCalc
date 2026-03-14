@@ -3,12 +3,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_PATH="${1:-$SCRIPT_DIR/dist/MonsterCalc}"
+APP_PATH="${1:-$SCRIPT_DIR/dist/MonsterCalc/MonsterCalc}"
 
 if [[ ! -e "$APP_PATH" ]]; then
   echo "MonsterCalc executable not found: $APP_PATH" >&2
   echo "Pass the path to the built executable, for example:" >&2
-  echo "  ./install_linux.sh ./dist/MonsterCalc" >&2
+  echo "  ./install_linux.sh ./dist/MonsterCalc/MonsterCalc" >&2
   exit 1
 fi
 
@@ -22,7 +22,7 @@ LAUNCHER_PATH="$BIN_DIR/MonsterCalc"
 
 mkdir -p "$ICON_DIR" "$APP_DIR" "$BIN_DIR"
 
-install -m 0644 "$SCRIPT_DIR/Monster.png" "$ICON_PATH"
+install -m 0644 "$SCRIPT_DIR/MonsterApp.png" "$ICON_PATH"
 install -m 0755 "$APP_PATH" "$LAUNCHER_PATH"
 
 cat > "$DESKTOP_PATH" <<EOF

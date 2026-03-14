@@ -7,8 +7,8 @@ from pathlib import Path
 from app_paths import resource_path
 from calc import MainWidget
 from qt_compat import QAction, QActionGroup, QApplication, QCheckBox, QDesktopServices
-from qt_compat import QColor, QFileDialog, QIcon, QInputDialog, QKeySequence, QMainWindow
-from qt_compat import QMessageBox, QPainter, QPixmap, QSettings, Qt, QUrl, configure_qt_environment
+from qt_compat import QFileDialog, QIcon, QInputDialog, QKeySequence, QMainWindow
+from qt_compat import QMessageBox, QPixmap, QSettings, Qt, QUrl, configure_qt_environment
 
 
 APP_NAME = "MonsterCalc"
@@ -52,9 +52,8 @@ class MainWindow(QMainWindow):
 
     def _configure_window(self) -> None:
         icon_path = resource_path("app_icon")
-        header_icon_path = resource_path("header_icon")
         self.setWindowIcon(QIcon(str(icon_path)))
-        self.monster_icon = self._build_badged_monster_icon(header_icon_path, 56)
+        self.monster_icon = self._scaled_dialog_icon(icon_path, 56)
         self.setWindowTitle(APP_NAME)
         screen = QApplication.primaryScreen()
         if screen is not None:
@@ -70,27 +69,16 @@ class MainWindow(QMainWindow):
             self.resize(760, 560)
         self.statusBar().showMessage("Ready")
 
-    def _build_badged_monster_icon(self, image_path: Path, badge_size: int) -> QPixmap:
+    def _scaled_dialog_icon(self, image_path: Path, logical_size: int) -> QPixmap:
+        dpr = self.devicePixelRatioF()
         icon = QPixmap(str(image_path)).scaled(
-            badge_size - 10,
-            badge_size - 10,
+            int(logical_size * dpr),
+            int(logical_size * dpr),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
-        badge = QPixmap(badge_size, badge_size)
-        badge.fill(Qt.GlobalColor.transparent)
-
-        painter = QPainter(badge)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.setPen(QColor("#171717"))
-        painter.setBrush(QColor("#d7d9dd"))
-        painter.drawRoundedRect(1, 1, badge_size - 2, badge_size - 2, 11, 11)
-
-        x_offset = int((badge_size - icon.width()) / 2)
-        y_offset = int((badge_size - icon.height()) / 2)
-        painter.drawPixmap(x_offset, y_offset, icon)
-        painter.end()
-        return badge
+        icon.setDevicePixelRatio(dpr)
+        return icon
 
     def _apply_window_style(self) -> None:
         self.setStyleSheet(

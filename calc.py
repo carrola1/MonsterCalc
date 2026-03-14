@@ -34,7 +34,7 @@ TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")
 HOVER_TOKEN_RE = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class InlineCompletion:
     token: str
     ghost_text: str
@@ -515,10 +515,9 @@ class MainWidget(QWidget):
             }
 
             QLabel#headerIcon {
-                background-color: #d7d9dd;
-                border: 1px solid #171717;
-                border-radius: 9px;
-                padding: 2px;
+                background-color: transparent;
+                border: none;
+                padding: 0px;
             }
 
             QLabel#headerTitle {
@@ -598,9 +597,9 @@ class MainWidget(QWidget):
         self.resDisp.setStyleSheet("background-color: #c1c3c7; color: #1d1d1d;")
 
     def _configure_header(self) -> None:
-        icon = QPixmap(str(resource_path("header_icon")))
-        self.headerIcon.setPixmap(icon.scaled(34, 34, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        self.headerIcon.setFixedSize(42, 42)
+        icon = self._scaled_icon_pixmap(40)
+        self.headerIcon.setPixmap(icon)
+        self.headerIcon.setFixedSize(44, 44)
         self.headerIcon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.headerIcon.setObjectName("headerIcon")
         self.headerTitle.setObjectName("headerTitle")
@@ -610,6 +609,18 @@ class MainWidget(QWidget):
         title_font.setBold(True)
         self.headerTitle.setFont(title_font)
         self.headerTitle.setContentsMargins(14, 0, 0, 0)
+
+    def _scaled_icon_pixmap(self, logical_size: int) -> QPixmap:
+        source = QPixmap(str(resource_path("app_icon")))
+        dpr = self.devicePixelRatioF()
+        scaled = source.scaled(
+            int(logical_size * dpr),
+            int(logical_size * dpr),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        scaled.setDevicePixelRatio(dpr)
+        return scaled
 
     def _configure_tool_buttons(self) -> None:
         self.eeTool.setText("EE")

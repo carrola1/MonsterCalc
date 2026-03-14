@@ -1,16 +1,29 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import importlib.util
 import sys
 from PyInstaller.utils.hooks import collect_all
 
 
 datas = [
-    ("Monster.png", "."),
-    ("MonsterHeader.png", "."),
+    ("MonsterApp.png", "."),
     ("demo.txt", "."),
     ("release_notes.txt", "."),
     ("UserGuide.html", "."),
 ]
+
+
+def require_build_dependency(module_name, install_hint):
+    if importlib.util.find_spec(module_name) is None:
+        raise SystemExit(
+            f"Missing build dependency: {module_name}\n"
+            f"Install it in the Python environment running PyInstaller.\n"
+            f"Example:\n"
+            f"  {install_hint}"
+        )
+
+
+require_build_dependency("PySide6", "python -m pip install PySide6")
 
 qt_datas = []
 qt_binaries = []
@@ -42,9 +55,8 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name="MonsterCalc",
     debug=False,
     bootloader_ignore_signals=False,
@@ -54,9 +66,20 @@ exe = EXE(
     icon=icon_file,
 )
 
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="MonsterCalc",
+)
+
 if sys.platform == "darwin":
     app = BUNDLE(
-        exe,
+        coll,
         name="MonsterCalc.app",
         icon=icon_file,
         bundle_identifier="com.andrewcarroll.monstercalc",

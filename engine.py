@@ -32,14 +32,14 @@ SI_SUFFIX_PATTERNS = (
 )
 
 
-@dataclass(slots=True)
+@dataclass
 class EngineConfig:
     sig_figs: int = 5
     res_format: str = "si"
     conv_xor_to_exp: bool = True
 
 
-@dataclass(slots=True)
+@dataclass
 class LineEvaluation:
     source: str
     expression: str = ""
@@ -49,7 +49,7 @@ class LineEvaluation:
     assignment_name: str | None = None
 
 
-@dataclass(slots=True)
+@dataclass
 class EvaluationState:
     variables: dict[str, Any] = field(default_factory=dict)
     ans: Any = None

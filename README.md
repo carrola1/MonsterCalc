@@ -63,7 +63,13 @@ The recommended PyInstaller build path is the spec file:
 pyinstaller MonsterCalc.spec
 ```
 
-On macOS, that spec now builds a proper `MonsterCalc.app` bundle and uses the native `Monster.icns` dock icon.
+That spec now builds:
+
+- macOS: `dist/MonsterCalc.app`
+- Windows: `dist/MonsterCalc/MonsterCalc.exe`
+- Linux: `dist/MonsterCalc/MonsterCalc`
+
+On macOS, it also uses the native `Monster.icns` dock icon.
 
 If you prefer building directly from the source entrypoint, use the command for your platform.
 
@@ -71,8 +77,7 @@ macOS:
 
 ```bash
 pyinstaller --noconfirm --windowed --name MonsterCalc --icon Monster.icns \
-  --add-data "Monster.png:." \
-  --add-data "MonsterHeader.png:." \
+  --add-data "MonsterApp.png:." \
   --add-data "demo.txt:." \
   --add-data "release_notes.txt:." \
   --add-data "UserGuide.html:." \
@@ -83,8 +88,7 @@ Linux:
 
 ```bash
 pyinstaller --noconfirm --windowed --name MonsterCalc --icon Monster.ico \
-  --add-data "Monster.png:." \
-  --add-data "MonsterHeader.png:." \
+  --add-data "MonsterApp.png:." \
   --add-data "demo.txt:." \
   --add-data "release_notes.txt:." \
   --add-data "UserGuide.html:." \
@@ -95,8 +99,7 @@ Windows PowerShell:
 
 ```powershell
 pyinstaller --noconfirm --windowed --name MonsterCalc --icon Monster.ico `
-  --add-data "Monster.png;." `
-  --add-data "MonsterHeader.png;." `
+  --add-data "MonsterApp.png;." `
   --add-data "demo.txt;." `
   --add-data "release_notes.txt;." `
   --add-data "UserGuide.html;." `
@@ -118,7 +121,7 @@ After building with PyInstaller, install the launcher with:
 
 ```bash
 chmod +x install_linux.sh
-./install_linux.sh ./dist/MonsterCalc
+./install_linux.sh ./dist/MonsterCalc/MonsterCalc
 ```
 
 That installs:
