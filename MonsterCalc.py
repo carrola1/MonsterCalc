@@ -150,15 +150,15 @@ class MainWindow(QMainWindow):
 
         self.copyAction = QAction("Copy", self)
         self.copyAction.setShortcut(QKeySequence.StandardKey.Copy)
-        self.copyAction.triggered.connect(self.editor.textEdit.copy)
+        self.copyAction.triggered.connect(self.copySelection)
 
         self.cutAction = QAction("Cut", self)
         self.cutAction.setShortcut(QKeySequence.StandardKey.Cut)
-        self.cutAction.triggered.connect(self.editor.textEdit.cut)
+        self.cutAction.triggered.connect(self.cutSelection)
 
         self.pasteAction = QAction("Paste", self)
         self.pasteAction.setShortcut(QKeySequence.StandardKey.Paste)
-        self.pasteAction.triggered.connect(self.editor.textEdit.paste)
+        self.pasteAction.triggered.connect(self.pasteClipboard)
 
         self.clearAction = QAction("Clear All", self)
         self.clearAction.setShortcut("Ctrl+Shift+C")
@@ -306,6 +306,27 @@ class MainWindow(QMainWindow):
     def clearAll(self) -> None:
         self.editor.clear()
         self.statusBar().showMessage("Cleared", 2000)
+
+    def _active_text_widget(self):
+        focus_widget = self.focusWidget()
+        if focus_widget in (self.editor.textEdit, self.editor.resDisp):
+            return focus_widget
+        return self.editor.textEdit
+
+    def copySelection(self) -> None:
+        self._active_text_widget().copy()
+
+    def cutSelection(self) -> None:
+        widget = self._active_text_widget()
+        if widget.isReadOnly():
+            return
+        widget.cut()
+
+    def pasteClipboard(self) -> None:
+        widget = self._active_text_widget()
+        if widget.isReadOnly():
+            widget = self.editor.textEdit
+        widget.paste()
 
     def setSigFigs(self) -> None:
         value, ok = QInputDialog.getInt(
