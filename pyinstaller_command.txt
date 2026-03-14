@@ -1,1 +1,11 @@
-pyinstaller --paths C:\Users\acarro12\AppData\Local\Programs\Python\Python36\Lib\site-packages\PySide2 --icon=C:\GitHub\MonsterCalc\Monster.ico --noconsole MonsterCalc.py -F
+# Example PyInstaller command for a local source checkout.
+# On macOS/Linux use ":" in --add-data paths. On Windows use ";" instead.
+
+pyinstaller --noconfirm --windowed --name MonsterCalc --icon Monster.ico \
+  --add-data "Monster.png:." \
+  --add-data "MonsterHeader.png:." \
+  --add-data "MonsterCalc.PNG:." \
+  --add-data "Functions.png:." \
+  --add-data "demo.txt:." \
+  --add-data "release_notes.txt:." \
+  MonsterCalc.py

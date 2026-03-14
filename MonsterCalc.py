@@ -1,339 +1,408 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+from __future__ import annotations
 
-import sys
-import os
-import subprocess
-from stat import S_IREAD, S_IRGRP, S_IROTH
 import ctypes
-from PySide2.QtWidgets import QApplication, QMainWindow, QAction, QFileDialog
-from PySide2.QtWidgets import QInputDialog, QMessageBox, QCheckBox
-from PySide2.QtGui import QIcon, QPixmap
-from PySide2.QtCore import Qt, QSettings
+import sys
+from pathlib import Path
+
+from app_paths import resource_path
 from calc import MainWidget
+from qt_compat import QAction, QActionGroup, QApplication, QCheckBox, QDesktopServices
+from qt_compat import QColor, QFileDialog, QIcon, QInputDialog, QKeySequence, QMainWindow
+from qt_compat import QMessageBox, QPainter, QPixmap, QSettings, Qt, QUrl, configure_qt_environment
+
+
+APP_NAME = "MonsterCalc"
+ORG_NAME = "Andrew Carroll"
+LEGACY_SETTINGS = ("company", "MonsterCalc")
+
+
+def _coerce_bool(value, default: bool) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _coerce_int(value, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 class MainWindow(QMainWindow):
-    """
-    Designer:       Andrew Carroll
-
-    Description:    This is the GUI's main window including menus.
-                    Imports MainWidget which includes the editor, results disp,
-                        and function/symbol/units tool bars.
-
-    """
     def __init__(self):
         super().__init__()
 
-        # Create editor
         self.editor = MainWidget()
         self.setCentralWidget(self.editor)
 
-        # Create main view and icon
-        self.setWindowTitle("MONSTER CALC")
-        self.setGeometry(600, 300, 600, 500)
-        self.setWindowTitle('MONSTER CALC')
-        path = os.path.abspath(os.path.dirname(sys.argv[0]))
-        if ('win32' in sys.platform):
-            self.setWindowIcon(QIcon(path + '\Monster.png'))
-            rawMonsterIco = QPixmap(path + '\Monster.png')
+        self.settings = QSettings(ORG_NAME, APP_NAME)
+        self.legacy_settings = QSettings(*LEGACY_SETTINGS)
+        self.save_path: Path | None = None
+        self.welcome_on_startup = True
+
+        self._configure_window()
+        self._create_actions()
+        self._create_menus()
+        self._restore_settings()
+        self._apply_window_style()
+
+    def _configure_window(self) -> None:
+        icon_path = resource_path("app_icon")
+        header_icon_path = resource_path("header_icon")
+        self.setWindowIcon(QIcon(str(icon_path)))
+        self.monster_icon = self._build_badged_monster_icon(header_icon_path, 56)
+        self.setWindowTitle(APP_NAME)
+        screen = QApplication.primaryScreen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            width = max(640, int(available.width() * 0.42))
+            height = max(460, int(available.height() * 0.42))
+            self.resize(width, height)
+            self.move(
+                available.x() + max(24, int(available.width() * 0.04)),
+                available.y() + max(24, int(available.height() * 0.05)),
+            )
         else:
-            self.setWindowIcon(
-                QIcon(path + '/Monster.png'))
-            rawMonsterIco = QPixmap(
-                path + '/Monster.png')
-        self.monsterIco = rawMonsterIco.scaledToWidth(
-            50, Qt.SmoothTransformation)
-        self.saveName = ''
+            self.resize(760, 560)
+        self.statusBar().showMessage("Ready")
 
-        # Create Menu
-        menubar = self.menuBar()
-        menubar.setNativeMenuBar(False)
-        self.setStyleSheet("""
+    def _build_badged_monster_icon(self, image_path: Path, badge_size: int) -> QPixmap:
+        icon = QPixmap(str(image_path)).scaled(
+            badge_size - 10,
+            badge_size - 10,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        badge = QPixmap(badge_size, badge_size)
+        badge.fill(Qt.GlobalColor.transparent)
 
+        painter = QPainter(badge)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(QColor("#171717"))
+        painter.setBrush(QColor("#d7d9dd"))
+        painter.drawRoundedRect(1, 1, badge_size - 2, badge_size - 2, 11, 11)
+
+        x_offset = int((badge_size - icon.width()) / 2)
+        y_offset = int((badge_size - icon.height()) / 2)
+        painter.drawPixmap(x_offset, y_offset, icon)
+        painter.end()
+        return badge
+
+    def _apply_window_style(self) -> None:
+        self.setStyleSheet(
+            """
             QMainWindow {
-                background-color: rgb(49,49,49);
+                background-color: #2f3032;
             }
 
             QMenuBar {
-                background-color: rgb(49,49,49);
-                color: rgb(255,255,255);
-                border: 1px solid #000;
+                background-color: #2f3032;
+                color: #f2f2f2;
+                border-bottom: 1px solid #111111;
             }
 
             QMenuBar::item {
-                background-color: rgb(49,49,49);
-                color: rgb(255,255,255);
+                background-color: transparent;
+                padding: 4px 10px;
             }
 
-            QMenuBar::item::selected {
-                background-color: rgb(30,30,30);
+            QMenuBar::item:selected {
+                background-color: #202020;
             }
 
             QMenu {
-                background-color: rgb(49,49,49);
-                color: white;
-                border: 1px solid #000;
+                background-color: #2f3032;
+                color: #e0e0e0;
+                border: 1px solid #111111;
             }
 
-            QMenu::item::selected {
-                background-color: rgb(30,30,30);
+            QMenu::item:selected {
+                background-color: #202020;
             }
-        """)
 
-        # Create menu categories
-        fileMenu = menubar.addMenu('&File')
-        editMenu = menubar.addMenu('&Edit')
-        settingsMenu = menubar.addMenu('&Settings')
-        helpMenu = menubar.addMenu('&Help')
+            QStatusBar {
+                background-color: #2f3032;
+                color: #c2c4c7;
+            }
+            """
+        )
 
-        # File menu
-        openAction = QAction('Open', self)
-        openAction.setShortcut('Ctrl+O')
-        openAction.triggered.connect(self.openDialog)
-        fileMenu.addAction(openAction)
+    def _create_actions(self) -> None:
+        self.openAction = QAction("Open…", self)
+        self.openAction.setShortcut(QKeySequence.StandardKey.Open)
+        self.openAction.triggered.connect(self.openDialog)
 
-        saveAction = QAction('Save', self)
-        saveAction.setShortcut('Ctrl+S')
-        saveAction.triggered.connect(self.checkSave)
-        fileMenu.addAction(saveAction)
+        self.saveAction = QAction("Save", self)
+        self.saveAction.setShortcut(QKeySequence.StandardKey.Save)
+        self.saveAction.triggered.connect(self.checkSave)
 
-        saveAsAction = QAction('Save As..', self)
-        saveAsAction.triggered.connect(self.saveDialog)
-        fileMenu.addAction(saveAsAction)
+        self.saveAsAction = QAction("Save As…", self)
+        self.saveAsAction.setShortcut(QKeySequence.StandardKey.SaveAs)
+        self.saveAsAction.triggered.connect(self.saveDialog)
 
-        exitAction = QAction('Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.triggered.connect(self.close)
-        fileMenu.addAction(exitAction)
+        self.exitAction = QAction("Exit", self)
+        self.exitAction.setShortcut(QKeySequence.StandardKey.Quit)
+        self.exitAction.triggered.connect(self.close)
 
-        # Edit menu
-        copyAction = QAction('Copy', self)
-        copyAction.setShortcut('Ctrl+C')
-        copyAction.triggered.connect(self.editor.textEdit.copy)
-        editMenu.addAction(copyAction)
+        self.copyAction = QAction("Copy", self)
+        self.copyAction.setShortcut(QKeySequence.StandardKey.Copy)
+        self.copyAction.triggered.connect(self.editor.textEdit.copy)
 
-        cutAction = QAction('Cut', self)
-        cutAction.setShortcut('Ctrl+X')
-        cutAction.triggered.connect(self.editor.textEdit.cut)
-        editMenu.addAction(cutAction)
+        self.cutAction = QAction("Cut", self)
+        self.cutAction.setShortcut(QKeySequence.StandardKey.Cut)
+        self.cutAction.triggered.connect(self.editor.textEdit.cut)
 
-        pasteAction = QAction('Paste', self)
-        pasteAction.setShortcut('Ctrl+V')
-        pasteAction.triggered.connect(self.editor.textEdit.paste)
-        editMenu.addAction(pasteAction)
+        self.pasteAction = QAction("Paste", self)
+        self.pasteAction.setShortcut(QKeySequence.StandardKey.Paste)
+        self.pasteAction.triggered.connect(self.editor.textEdit.paste)
 
-        clearAction = QAction('Clear all', self)
-        clearAction.setShortcut('Ctrl+Shift+C')
-        clearAction.triggered.connect(self.clearAll)
-        editMenu.addAction(clearAction)
+        self.clearAction = QAction("Clear All", self)
+        self.clearAction.setShortcut("Ctrl+Shift+C")
+        self.clearAction.triggered.connect(self.clearAll)
 
-        # Settings menu
-        programname = os.path.basename(__file__)
-        self.programbase, ext = os.path.splitext(programname)
-        self.settings = QSettings("company", self.programbase)
-        if (self.settings.value("sig_figs") != None):
-            self.editor.sigFigs = self.settings.value("sig_figs")
-        if (self.settings.value("res_format") != None):
-            self.editor.resFormat = self.settings.value("res_format")
-        if (self.settings.value("conv_xor_to_exp") != None):
-            self.editor.convXorToExp = self.settings.value("conv_xor_to_exp")
+        self.sigFigAction = QAction("Significant Figures…", self)
+        self.sigFigAction.triggered.connect(self.setSigFigs)
 
+        self.resultFormatGroup = QActionGroup(self)
+        self.resultFormatGroup.setExclusive(True)
+        self.sciFormatAction = QAction("Scientific (1.0e4)", self, checkable=True)
+        self.engFormatAction = QAction("Engineering (10.0e3)", self, checkable=True)
+        self.siFormatAction = QAction("SI Unit (10.0k)", self, checkable=True)
+        self.resultFormatGroup.addAction(self.sciFormatAction)
+        self.resultFormatGroup.addAction(self.engFormatAction)
+        self.resultFormatGroup.addAction(self.siFormatAction)
+        self.sciFormatAction.triggered.connect(lambda: self.setResFormat("scientific"))
+        self.engFormatAction.triggered.connect(lambda: self.setResFormat("engineering"))
+        self.siFormatAction.triggered.connect(lambda: self.setResFormat("si"))
 
-        sigFigAction = QAction('Significant Figures..', self)
-        sigFigAction.triggered.connect(self.setSigFigs)
-        settingsMenu.addAction(sigFigAction)
-
-        resFormatMenu = settingsMenu.addMenu('Results Format')
-        self.sciFormatAction = QAction('Scientific (1.0e4)', self)
-        self.engFormatAction = QAction('Engineering (10.0e3)', self)
-        self.siFormatAction = QAction('SI Unit (10.0k)', self)
-        self.sciFormatAction.triggered.connect(self.setResFormatSci)
-        self.sciFormatAction.setCheckable(True)
-        self.sciFormatAction.setChecked(self.editor.resFormat == 'scientific')
-        self.engFormatAction.triggered.connect(self.setResFormatEng)
-        self.engFormatAction.setCheckable(True)
-        self.engFormatAction.setChecked(self.editor.resFormat == 'engineering')
-        self.siFormatAction.triggered.connect(self.setResFormatSi)
-        self.siFormatAction.setCheckable(True)
-        self.siFormatAction.setChecked(self.editor.resFormat == 'si')
-        resFormatMenu.addAction(self.sciFormatAction)
-        resFormatMenu.addAction(self.engFormatAction)
-        resFormatMenu.addAction(self.siFormatAction)
-
-        self.convXorToExpAction = QAction('Convert ^ to **', self)
-        self.convXorToExpAction.setCheckable(True)
-        self.convXorToExpAction.setChecked(self.editor.convXorToExp == 'True')
+        self.convXorToExpAction = QAction("Convert ^ to **", self, checkable=True)
         self.convXorToExpAction.triggered.connect(self.setConvXorToExp)
+
+        self.aboutAction = QAction("About", self)
+        self.aboutAction.triggered.connect(self.about)
+
+        self.demoAction = QAction("Load Demo", self)
+        self.demoAction.triggered.connect(lambda: self.welcome(force_load_demo=True))
+
+        self.releaseAction = QAction("Release Notes", self)
+        self.releaseAction.triggered.connect(self.release_notes)
+
+    def _create_menus(self) -> None:
+        menubar = self.menuBar()
+        menubar.setNativeMenuBar(False)
+
+        fileMenu = menubar.addMenu("&File")
+        fileMenu.addAction(self.openAction)
+        fileMenu.addAction(self.saveAction)
+        fileMenu.addAction(self.saveAsAction)
+        fileMenu.addSeparator()
+        fileMenu.addAction(self.exitAction)
+
+        editMenu = menubar.addMenu("&Edit")
+        editMenu.addAction(self.copyAction)
+        editMenu.addAction(self.cutAction)
+        editMenu.addAction(self.pasteAction)
+        editMenu.addSeparator()
+        editMenu.addAction(self.clearAction)
+
+        settingsMenu = menubar.addMenu("&Settings")
+        settingsMenu.addAction(self.sigFigAction)
+        resultFormatMenu = settingsMenu.addMenu("Results Format")
+        resultFormatMenu.addAction(self.sciFormatAction)
+        resultFormatMenu.addAction(self.engFormatAction)
+        resultFormatMenu.addAction(self.siFormatAction)
+        settingsMenu.addSeparator()
         settingsMenu.addAction(self.convXorToExpAction)
 
-        self.welcomeOnStartup = True
+        helpMenu = menubar.addMenu("&Help")
+        helpMenu.addAction(self.aboutAction)
+        helpMenu.addAction(self.demoAction)
+        helpMenu.addAction(self.releaseAction)
 
-        ### Help menu ####
+    def _restore_settings(self) -> None:
+        sig_figs = self._setting_value("sig_figs")
+        if sig_figs is not None:
+            self.editor.sigFigs = _coerce_int(sig_figs, self.editor.sigFigs)
 
-        # About screen
-        aboutAction = QAction('About', self)
-        aboutAction.triggered.connect(self.about)
-        helpMenu.addAction(aboutAction)
+        result_format = self._setting_value("res_format")
+        if result_format in {"scientific", "engineering", "si"}:
+            self.editor.resFormat = str(result_format)
 
-        # Launch Welcome/demo screen
-        demoAction = QAction('Load Demo', self)
-        demoAction.triggered.connect(self.welcome)
-        helpMenu.addAction(demoAction)
+        conv_xor = self._setting_value("conv_xor_to_exp")
+        if conv_xor is not None:
+            self.editor.convXorToExp = _coerce_bool(conv_xor, True)
 
-        # Launch release notes
-        releaseAction = QAction('Release Notes', self)
-        releaseAction.triggered.connect(self.release_notes)
-        helpMenu.addAction(releaseAction)
+        self.welcome_on_startup = _coerce_bool(
+            self._setting_value("welcome_on_startup"),
+            True,
+        )
 
+        geometry = self.settings.value("window_geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
 
-    def openDialog(self):
+        self._sync_action_state()
+
+    def _setting_value(self, key: str):
+        current = self.settings.value(key)
+        if current is not None:
+            return current
+        return self.legacy_settings.value(key)
+
+    def _sync_action_state(self) -> None:
+        self.sciFormatAction.setChecked(self.editor.resFormat == "scientific")
+        self.engFormatAction.setChecked(self.editor.resFormat == "engineering")
+        self.siFormatAction.setChecked(self.editor.resFormat == "si")
+        self.convXorToExpAction.setChecked(self.editor.convXorToExp)
+
+    def openDialog(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open file",
+            str(Path.home()),
+            "Text files (*.txt);;All files (*)",
+        )
+        if not filename:
+            return
+
         try:
-            fname = QFileDialog.getOpenFileName(
-                self, 'Open file', '/home', 'Text files (*.txt)')
-            f = open(fname[0], 'r')
-            with f:
-                self.editor.textEdit.setPlainText(f.read())
-            self.saveName = fname[0]
-        except:
-            pass
-        return
+            file_path = Path(filename)
+            self.editor.textEdit.setPlainText(file_path.read_text(encoding="utf-8"))
+            self.save_path = file_path
+            self.statusBar().showMessage(f"Opened {file_path.name}", 3000)
+        except OSError as exc:
+            self._show_error("Open Failed", f"Could not open file.\n\n{exc}")
 
-    def saveDialog(self):
-        try:
-            fname = QFileDialog.getSaveFileName(
-                self, 'Save file', '/home', 'Text files (*.txt)')
-            f = open(fname[0], 'w')
-            with f:
-                f.write(self.editor.textEdit.toPlainText())
-            self.saveName = fname[0]
-        except:
-            pass
-        return
+    def saveDialog(self) -> None:
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save file",
+            str(self.save_path or Path.home()),
+            "Text files (*.txt);;All files (*)",
+        )
+        if not filename:
+            return
 
-    def checkSave(self):
-        if (self.saveName == ''):
+        self._save_to_path(Path(filename))
+
+    def checkSave(self) -> None:
+        if self.save_path is None:
             self.saveDialog()
-        else:
-            try:
-                f = open(self.saveName, 'w')
-                with f:
-                    f.write(self.editor.textEdit.toPlainText())
-            except:
-                pass
-        return
+            return
+        self._save_to_path(self.save_path)
 
-    def clearAll(self):
+    def _save_to_path(self, file_path: Path) -> None:
+        try:
+            file_path.write_text(self.editor.textEdit.toPlainText(), encoding="utf-8")
+            self.save_path = file_path
+            self.statusBar().showMessage(f"Saved {file_path.name}", 3000)
+        except OSError as exc:
+            self._show_error("Save Failed", f"Could not save file.\n\n{exc}")
+
+    def clearAll(self) -> None:
         self.editor.clear()
-        return
+        self.statusBar().showMessage("Cleared", 2000)
 
-    def setSigFigs(self):
-        text, ok = QInputDialog.getText(self, 'Significant Figures',
-                                        'Set # of significant figures' +
-                                        'to display:')
+    def setSigFigs(self) -> None:
+        value, ok = QInputDialog.getInt(
+            self,
+            "Significant Figures",
+            "Set the number of significant figures to display:",
+            self.editor.sigFigs,
+            1,
+            15,
+        )
         if ok:
-            self.editor.setSigFigs(int(text))
+            self.editor.sigFigs = value
             self.saveSettings()
-        return
 
-    def setConvXorToExp(self):
-        if (self.editor.convXorToExp == 'True'):
-            self.editor.convXorToExp = 'False'
-            self.convXorToExpAction.setChecked(False)
-        else:
-            self.editor.convXorToExp = 'True'
-            self.convXorToExpAction.setChecked(True)
+    def setConvXorToExp(self) -> None:
+        self.editor.convXorToExp = self.convXorToExpAction.isChecked()
         self.saveSettings()
 
-    def setResFormatSci(self):
-        self.editor.resFormat = 'scientific'
-        self.sciFormatAction.setChecked(True)
-        self.engFormatAction.setChecked(False)
-        self.siFormatAction.setChecked(False)
+    def setResFormat(self, format_name: str) -> None:
+        self.editor.resFormat = format_name
+        self._sync_action_state()
         self.saveSettings()
-        return
 
-    def setResFormatEng(self):
-        self.editor.resFormat = 'engineering'
-        self.sciFormatAction.setChecked(False)
-        self.engFormatAction.setChecked(True)
-        self.siFormatAction.setChecked(False)
-        self.saveSettings()
-        return
+    def saveSettings(self) -> None:
+        self.settings.setValue("sig_figs", self.editor.sigFigs)
+        self.settings.setValue("res_format", self.editor.resFormat)
+        self.settings.setValue("conv_xor_to_exp", self.editor.convXorToExp)
+        self.settings.setValue("welcome_on_startup", self.welcome_on_startup)
+        self.settings.setValue("window_geometry", self.saveGeometry())
 
-    def setResFormatSi(self):
-        self.editor.resFormat = 'si'
-        self.sciFormatAction.setChecked(False)
-        self.engFormatAction.setChecked(False)
-        self.siFormatAction.setChecked(True)
-        self.saveSettings()
-        return
-
-    def saveSettings(self):
-        self.settings = QSettings("company", self.programbase)
-        self.settings.setValue('sig_figs', self.getSigFigs())
-        self.settings.setValue('res_format', self.getResFormat())
-        self.settings.setValue('conv_xor_to_exp', self.getConvXorToExp())
-        self.settings.setValue('welcome_on_startup', self.welcomeOnStartup)
-
-    def getSigFigs(self):
-        return self.editor.sigFigs
-
-    def getResFormat(self):
-        return self.editor.resFormat
-
-    def getConvXorToExp(self):
-        return self.editor.convXorToExp
-
-    def about(self):
-        msgBox = QMessageBox()
-        msgBox.setIconPixmap(self.monsterIco)
-        msgBox.setText('Monster Calc v1.10 - Oct 2023\nCreated by Andrew Carroll')
-        msgBox.setWindowTitle('About')
+    def about(self) -> None:
+        msgBox = QMessageBox(self)
+        msgBox.setIconPixmap(self.monster_icon)
+        msgBox.setWindowTitle("About")
+        msgBox.setText(
+            "MonsterCalc\n\n"
+            "A fast scratchpad calculator for math, units, electronics, and programming.\n"
+            "Created by Andrew Carroll."
+        )
         msgBox.exec()
-        return
 
-    def welcome(self):
-        path = os.path.abspath(os.path.dirname(sys.argv[0]))
-        if ('win32' in sys.platform):
-          f = open(path + '\demo.txt', 'r')
-        else:
-          f = open(path + '/demo.txt', 'r')
-        with f:
-            self.editor.textEdit.setPlainText(f.read())
-        self.setGeometry(500, 200, 850, 750)
-        msgBox = QMessageBox()
-        msgBox.setIconPixmap(self.monsterIco)
-        msgBox.setText('Welcome to MonsterCalc! A demo sheet has been loaded ' +
-                       'to help you get started')
-        msgBox.setWindowTitle('Welcome')
-        checkBox = QCheckBox('Do not show demo again')
+    def welcome(self, force_load_demo: bool = False) -> None:
+        if force_load_demo:
+            self._load_demo()
+
+        msgBox = QMessageBox(self)
+        msgBox.setIconPixmap(self.monster_icon)
+        msgBox.setWindowTitle("Welcome")
+        msgBox.setText(
+            "MonsterCalc is ready.\n\n"
+            "A demo sheet has been loaded to help you get started."
+        )
+        checkBox = QCheckBox("Do not show demo again")
         checkBox.setChecked(False)
         msgBox.setCheckBox(checkBox)
         msgBox.exec()
-        self.welcomeOnStartup = not(checkBox.checkState() == Qt.CheckState.Checked)
+
+        self.welcome_on_startup = not checkBox.isChecked()
         self.saveSettings()
-        return
 
-    def release_notes(self):
-        path = os.path.abspath(os.path.dirname(sys.argv[0]))
-        if ('win32' in sys.platform):
-          os.chmod(path + '\\release_notes.txt', S_IREAD|S_IRGRP|S_IROTH)
-          os.startfile(path + '\\release_notes.txt', 'open')
-        else:
-          os.chmod(path + '/release_notes.txt', S_IREAD|S_IRGRP|S_IROTH)
-          subprocess.call(["xdg-open", (path + '/release_notes.txt')])
-        return
+    def _load_demo(self) -> None:
+        demo_path = resource_path("demo")
+        self.editor.textEdit.setPlainText(demo_path.read_text(encoding="utf-8"))
+        self.statusBar().showMessage("Demo loaded", 3000)
+
+    def release_notes(self) -> None:
+        release_path = resource_path("release_notes")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(release_path)))
+
+    def closeEvent(self, event) -> None:
+        self.saveSettings()
+        super().closeEvent(event)
+
+    def _show_error(self, title: str, message: str) -> None:
+        QMessageBox.critical(self, title, message)
 
 
-if __name__ == '__main__':
+def main() -> int:
+    configure_qt_environment()
     app = QApplication(sys.argv)
-    ex = MainWindow()
-    if ('win32' in sys.platform):
-        myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    ex.show()
-    ex.editor.textEdit.setFocus()
-    if (ex.settings.value("welcome_on_startup") == None) or (ex.settings.value("welcome_on_startup") == 'true'):
-        ex.welcome()
-    sys.exit(app.exec_())
+    app.setApplicationDisplayName(APP_NAME)
+    app.setOrganizationName(ORG_NAME)
+    app.setStyle("Fusion")
+
+    window = MainWindow()
+    if sys.platform.startswith("win"):
+        app_id = "MonsterCalc.MonsterCalc"
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+
+    window.show()
+    window.editor.textEdit.setFocus()
+
+    if window.welcome_on_startup:
+        window._load_demo()
+        window.welcome()
+
+    return app.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

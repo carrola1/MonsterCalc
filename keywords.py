@@ -45,8 +45,8 @@ funcs = ['floor', 'ceil', 'sqrt', 'log', 'log10', 'log2', 'exp',
          'rad', 'deg', 'polar', 'rect', 'phase', 'cdf', 'pdf',
          'hex', 'bin', 'min', 'max', 'sum', 'bitget', 'a2h',
          'h2a', 'findres', 'findrdiv', 'rpar', 'vdiv']
-operators = ['\+', '-', '\*', '<<', '>>', '\^', '\&', '/', '=',
-             '%', '\|']
+operators = [r'\+', '-', r'\*', '<<', '>>', r'\^', r'\&', '/', '=',
+             '%', r'\|']
 prefix = ['0x', '0b']
 suffix = ['p', 'n', 'u', 'm', 'k', 'M', 'G']
 tweener = ['e']

@@ -1,12 +1,13 @@
-from PySide2.QtGui import QColor, QTextCharFormat, QFont, QSyntaxHighlighter
-from PySide2.QtCore import QRegExp
+from __future__ import annotations
+
+import re
+
+from qt_compat import QColor, QFont, QRegularExpression, QSyntaxHighlighter, QTextCharFormat
 
 
-class KeywordHighlighter (QSyntaxHighlighter):
-
-    def __init__(self, document, funcs, operators, syms, suffix, prefix,
-                 tweener, units, unusual_syms):
-        QSyntaxHighlighter.__init__(self, document)
+class KeywordHighlighter(QSyntaxHighlighter):
+    def __init__(self, document, funcs, operators, syms, suffix, prefix, tweener, units, unusual_syms):
+        super().__init__(document)
 
         self.funcs = funcs
         self.operators = operators
@@ -16,95 +17,77 @@ class KeywordHighlighter (QSyntaxHighlighter):
         self.units = units
         self.tweener = tweener
         self.unusual_syms = unusual_syms
+        self.assignment_regex = re.compile(r"^\s*([A-Za-z_]\w*)\s*=")
 
-        self.styles = {'funcs': self.styleFormat('#64B5F6', 'bold'),
-                       'operators': self.styleFormat('#FFA000'),
-                       'userSyms': self.styleFormat('#9575CD', 'bold'),
-                       'symbols': self.styleFormat('#F44336'),
-                       'comments': self.styleFormat('#808080')}
+        self.styles = {
+            "funcs": self.style_format("#ffd166", "bold"),
+            "operators": self.style_format("#7bdff2"),
+            "userSyms": self.style_format("#ff9f68", "bold"),
+            "symbols": self.style_format("#ff6b8a"),
+            "comments": self.style_format("#9099a4", "italic"),
+            "units": self.style_format("#9be564", "bold"),
+        }
 
-        rules = []
-        # Keyword, operator, and brace rules
-        rules += [(r'\b%s\b' % w, 0, self.styles['funcs'])
-                  for w in self.funcs]
-        rules += [(r'%s' % o, 0, self.styles['operators'])
-                  for o in self.operators]
-        rules += [(r'\b%s\b' % x, 0, self.styles['symbols'])
-                  for x in self.syms]
-        rules += [(r'(\d)(%s\b)' % s, 2, self.styles['symbols'])
-                  for s in self.suffix]
-        rules += [(r'\b%s' % p, 0, self.styles['symbols'])
-                  for p in self.prefix]
-        rules += [(r'(\d)(%s)' % t, 2, self.styles['symbols'])
-                  for t in self.tweener]
-        rules += [(r'\b%s\b' % u, 0, self.styles['symbols'])
-                  for u in self.units]
-        rules += [(r'\b%s\b' % x, 0, self.styles['operators'])
-                  for x in self.unusual_syms]
-        rules += [(r'#.*', 0, self.styles['comments'])]
+        base_rules = []
+        base_rules += [(rf"\b{re.escape(word)}\b", self.styles["funcs"]) for word in self.funcs]
+        base_rules += [(pattern, self.styles["operators"]) for pattern in self.operators]
+        base_rules += [(rf"\b{re.escape(symbol)}\b", self.styles["symbols"]) for symbol in self.syms]
+        base_rules += [(rf"(\d)({re.escape(symbol)}\b)", self.styles["symbols"]) for symbol in self.suffix]
+        base_rules += [(rf"\b{re.escape(prefix)}", self.styles["symbols"]) for prefix in self.prefix]
+        base_rules += [(rf"(\d)({re.escape(token)})", self.styles["symbols"]) for token in self.tweener]
+        base_rules += [(rf"\b{re.escape(unit)}\b", self.styles["units"]) for unit in self.units]
+        base_rules += [(rf"\b{re.escape(token)}\b", self.styles["operators"]) for token in self.unusual_syms]
+        base_rules += [(r"#.*", self.styles["comments"])]
 
-        # Build a QRegExp for each pattern
-        self.intRules = [(QRegExp(pat), index, fmt)
-                         for (pat, index, fmt) in rules]
+        self.base_rules = [(QRegularExpression(pattern), text_format) for pattern, text_format in base_rules]
 
-        self.rules = self.intRules
-        self.state = 0
+    def style_format(self, color: str, style: str = "") -> QTextCharFormat:
+        text_format = QTextCharFormat()
+        text_format.setForeground(QColor(color))
+        if "bold" in style:
+            text_format.setFontWeight(QFont.Weight.Bold)
+        if "italic" in style:
+            text_format.setFontItalic(True)
+        return text_format
 
-        self.symKeys = {}
+    def highlightBlock(self, text: str) -> None:
+        rules = list(self.base_rules)
+
+        for variable_name in self._assignment_names():
+            rules.append(
+                (
+                    QRegularExpression(rf"\b{re.escape(variable_name)}\b"),
+                    self.styles["userSyms"],
+                )
+            )
+
+        for expression, text_format in rules:
+            match_iterator = expression.globalMatch(text)
+            while match_iterator.hasNext():
+                match = match_iterator.next()
+                self.setFormat(match.capturedStart(), match.capturedLength(), text_format)
+
+    def _assignment_names(self) -> set[str]:
+        document = self.document()
+        if document is None:
+            return set()
+        text = document.toPlainText()
+        return {
+            match.group(1)
+            for line in text.splitlines()
+            for match in [self.assignment_regex.match(line)]
+            if match
+        }
 
 
-    def styleFormat(self, color, style=''):
-        """Return a QTextCharFormat with the given attributes.
-        """
-        _color = QColor()
-        _color.setNamedColor(color)
+class ResultHighlighter(QSyntaxHighlighter):
+    def __init__(self, document):
+        super().__init__(document)
+        self.hint_style = QTextCharFormat()
+        self.hint_style.setForeground(QColor("#727b84"))
+        self.hint_style.setFontItalic(True)
 
-        _format = QTextCharFormat()
-        _format.setForeground(_color)
-        if 'bold' in style:
-            _format.setFontWeight(QFont.Bold)
-        if 'italic' in style:
-            _format.setFontItalic(True)
-
-        return _format
-
-    def updateRules(self, userSyms):
-        newRules = []
-        # User symbol rules
-        newRules += [(r'\b%s\b' % w, 0, self.styles['userSyms'])
-                     for w in userSyms]
-        newRules = [(QRegExp(pat), index, fmt)
-                    for (pat, index, fmt) in newRules]
-        self.rules = self.intRules + newRules
-
-    def highlightBlock(self, text):
-        """Apply syntax highlighting to the given block of text.     """
-        prevState = self.currentBlockState()
-        curState = self.state
-        self.setCurrentBlockState(curState)
-        self.state = self.state + 1
-
-        # Find changes and evaluate each line
-        self.evalLine(text, prevState, curState)
-        self.updateRules(list(self.symKeys.values()))
-
-        for expression, nth, thisFormat in self.rules:
-            index = expression.indexIn(text, 0)
-            while index >= 0:
-                # We actually want the index of the nth match
-                index = expression.pos(nth)
-                length = len(expression.cap(nth))
-                self.setFormat(index, length, thisFormat)
-                index = expression.indexIn(text, index + length)
-
-        return
-
-    def evalLine(self, line, prevState, curState):
-        self.symKeys.pop(prevState, 0)
-        if ('=' in line):
-            # Variable assignment detected
-            line = line.split('=')
-            newVar = line[0].strip()
-            if ((newVar != '') & (' ' not in newVar)):
-                self.symKeys[curState] = newVar
-        return
+    def highlightBlock(self, text: str) -> None:
+        stripped = text.strip()
+        if stripped.startswith("<") and stripped.endswith(">"):
+            self.setFormat(0, len(text), self.hint_style)
