@@ -4,13 +4,13 @@ from calc import find_inline_completion
 from toolButtons import TOKEN_SIGNATURES
 
 
-def test_find_inline_completion_requires_unique_three_character_match():
-    completion = find_inline_completion("bit", 3, TOKEN_SIGNATURES)
+def test_find_inline_completion_requires_unique_match():
+    completion = find_inline_completion("bitg", 4, TOKEN_SIGNATURES)
 
     assert completion is not None
     assert completion.token == "bitget"
-    assert completion.ghost_text == "get(value, msb, lsb)"
-    assert completion.insert_text == "get"
+    assert completion.ghost_text == "et(value, msb, lsb)"
+    assert completion.insert_text == "et"
 
 
 def test_find_inline_completion_shows_signature_for_exact_function_name():
@@ -60,4 +60,5 @@ def test_find_inline_completion_skips_current_argument_once_typing_starts():
 
 def test_find_inline_completion_ignores_short_or_ambiguous_fragments():
     assert find_inline_completion("bi", 2, TOKEN_SIGNATURES) is None
+    assert find_inline_completion("bit", 3, TOKEN_SIGNATURES) is None
     assert find_inline_completion("log", 3, TOKEN_SIGNATURES) is None

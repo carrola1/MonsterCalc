@@ -43,7 +43,7 @@ unitKeys = lenKeys + volKeys + massKeys + forceKeys + memKeys + tempKeys
 funcs = ['floor', 'ceil', 'sqrt', 'log', 'log10', 'log2', 'exp',
          'sin', 'cos', 'tan', 'abs', 'asin', 'acos', 'atan',
          'rad', 'deg', 'polar', 'rect', 'phase', 'cdf', 'pdf',
-         'hex', 'bin', 'min', 'max', 'sum', 'bitget', 'a2h',
+         'hex', 'bin', 'min', 'max', 'sum', 'bitget', 'bitpunch', 'a2h',
          'h2a', 'findres', 'findrdiv', 'rpar', 'vdiv']
 operators = [r'\+', '-', r'\*', '<<', '>>', r'\^', r'\&', '/', '=',
              '%', r'\|']

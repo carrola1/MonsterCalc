@@ -23,6 +23,7 @@ hex(0b110)          # binary -> hex
 bin(5)                  # binary conversion
 bin(5, 8)	 # binary, specify length
 bitget(0xA, 1, 0)  # Get 2 LSBs of 0xA
+bitpunch(0x01, 7, 1)  # set bit 7 high
 a2h("test")           # ASCII -> hex
 
 # Electrical Examples

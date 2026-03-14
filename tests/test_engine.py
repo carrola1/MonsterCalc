@@ -22,6 +22,13 @@ def test_engine_supports_unit_conversions():
     ]
 
 
+def test_engine_supports_bitpunch_programming_helper():
+    engine = CalculationEngine()
+    results = engine.evaluate_document("bitpunch(0x01, 7, 1)\nbitpunch(1, 7, 1)")
+
+    assert [line.display for line in results] == ["0x81", "129"]
+
+
 def test_engine_preserves_hash_inside_strings_and_ignores_comments():
     engine = CalculationEngine()
     results = engine.evaluate_document('a2h("te#st") # inline comment')

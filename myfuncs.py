@@ -56,6 +56,24 @@ def bitget(valIn, stopBit, startBit):
     return bin(bitsRtn)
 
 
+def bitpunch(valIn, bitNum, bitVal):
+    value = math.floor(valIn)
+    bit_index = math.floor(bitNum)
+    bit_state = math.floor(bitVal)
+
+    if bit_index < 0:
+        raise ValueError("bit number must be non-negative")
+    if bit_state not in (0, 1):
+        raise ValueError("bit value must be 0 or 1")
+
+    if bit_state == 1:
+        punched = value | (1 << bit_index)
+    else:
+        punched = value & ~(1 << bit_index)
+
+    return punched
+
+
 def a2h(dataIn):
     return hexlify(bytes(dataIn, "utf-8"))
 

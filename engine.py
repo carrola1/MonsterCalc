@@ -7,12 +7,13 @@ from cmath import sin, sqrt, tan
 from math import radians as rad
 from math import degrees as deg
 from typing import Any
+import builtins
 import io
 import re
 import tokenize
 
 import keywords
-from myfuncs import a2h, bin, bitget, cdf, eng_string, findrdiv, findres
+from myfuncs import a2h, bin, bitget, bitpunch, cdf, eng_string, findrdiv, findres
 from myfuncs import h2a, hex, mySum, pdf, rpar, vdiv
 
 
@@ -94,7 +95,7 @@ class CalculationEngine:
 
             current_state.variables[variable_name] = value
             evaluation.value = value
-            evaluation.display = self._format_result(value)
+            evaluation.display = self._format_result(value, expression)
             return evaluation
 
         if CONVERSION_RE.search(clean_line):
@@ -118,7 +119,7 @@ class CalculationEngine:
             return evaluation
 
         evaluation.value = value
-        evaluation.display = self._format_result(value)
+        evaluation.display = self._format_result(value, clean_line)
         return evaluation
 
     def _evaluate_expression(self, expression: str, state: EvaluationState) -> Any:
@@ -134,9 +135,12 @@ class CalculationEngine:
 
         return eval(prepared, {"__builtins__": {}}, namespace)
 
-    def _format_result(self, value: Any) -> str:
+    def _format_result(self, value: Any, expression: str = "") -> str:
         if value is None or callable(value):
             return ""
+        bitpunch_base = bitpunch_display_base(expression)
+        if bitpunch_base is not None:
+            return builtins.hex(value) if bitpunch_base == "hex" else str(value)
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             return eng_string(value, self.config.sig_figs, "%s", self.config.res_format)
         return str(value)
@@ -151,6 +155,7 @@ def build_eval_namespace() -> dict[str, Any]:
         "atan": atan,
         "bin": bin,
         "bitget": bitget,
+        "bitpunch": bitpunch,
         "cdf": cdf,
         "ceil": ceil,
         "cos": cos,
@@ -180,6 +185,37 @@ def build_eval_namespace() -> dict[str, Any]:
         "tan": tan,
         "vdiv": vdiv,
     }
+
+
+def bitpunch_display_base(expression: str) -> str | None:
+    first_arg = top_level_call_first_arg(expression, "bitpunch")
+    if first_arg is None:
+        return None
+
+    normalized = first_arg.strip()
+    if re.fullmatch(r"[+-]?\d[\d_]*", normalized):
+        return "decimal"
+    return "hex"
+
+
+def top_level_call_first_arg(expression: str, function_name: str) -> str | None:
+    prefix = f"{function_name}("
+    stripped = expression.strip()
+    if not stripped.startswith(prefix) or not stripped.endswith(")"):
+        return None
+
+    depth = 0
+    arg_chars: list[str] = []
+    for char in stripped[len(prefix) : -1]:
+        if char == "," and depth == 0:
+            return "".join(arg_chars).strip()
+        if char == "(":
+            depth += 1
+        elif char == ")" and depth > 0:
+            depth -= 1
+        arg_chars.append(char)
+
+    return "".join(arg_chars).strip() or None
 
 
 def prepare_expression(expression: str, *, conv_xor_to_exp: bool, ans: Any) -> str:

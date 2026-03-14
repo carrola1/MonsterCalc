@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from myfuncs import cdf, eng_string, findres, pdf
+from myfuncs import bitpunch, cdf, eng_string, findres, pdf
 
 
 def test_findres_handles_sub_10_ohm_values():
@@ -16,3 +16,8 @@ def test_eng_string_formats_supported_modes():
     assert eng_string(10000, 5, resFormat="scientific") == "1.0000e4"
     assert eng_string(10000, 5, resFormat="engineering") == "10e3"
     assert eng_string(10000, 5, resFormat="si") == "10k"
+
+
+def test_bitpunch_sets_and_clears_bits():
+    assert bitpunch(0x01, 7, 1) == 0x81
+    assert bitpunch(0x81, 7, 0) == 0x01
