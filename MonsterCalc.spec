@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import sys
+from PyInstaller.utils.hooks import collect_all
 
 
 datas = [
@@ -11,21 +12,23 @@ datas = [
     ("UserGuide.html", "."),
 ]
 
+qt_datas = []
+qt_binaries = []
 hiddenimports = []
 if sys.platform == "win32":
-    hiddenimports = [
-        "PySide6",
-        "PySide6.QtCore",
-        "PySide6.QtGui",
-        "PySide6.QtWidgets",
-        "shiboken6",
-    ]
+    qt_datas, qt_binaries, hiddenimports = collect_all("PySide6")
+    _, shiboken_binaries, shiboken_hiddenimports = collect_all("shiboken6")
+    qt_binaries += shiboken_binaries
+    hiddenimports += shiboken_hiddenimports
+    hiddenimports = sorted(set(hiddenimports))
+
+datas += qt_datas
 icon_file = "Monster.icns" if sys.platform == "darwin" else "Monster.ico"
 
 a = Analysis(
     ["MonsterCalc.py"],
     pathex=[],
-    binaries=[],
+    binaries=qt_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
