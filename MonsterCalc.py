@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         else:
             self.resize(760, 560)
         self.statusBar().showMessage("Ready")
+        self._apply_native_dark_titlebar()
 
     def _scaled_dialog_icon(self, image_path: Path, logical_size: int) -> QPixmap:
         dpr = self.devicePixelRatioF()
@@ -82,10 +83,35 @@ class MainWindow(QMainWindow):
         return icon
 
     def _apply_window_style(self) -> None:
-        style = [
+        self.setStyleSheet(
             """
             QMainWindow {
                 background-color: #2f3032;
+            }
+
+            QMenuBar {
+                background-color: #2f3032;
+                color: #f2f2f2;
+                border-bottom: 1px solid #111111;
+            }
+
+            QMenuBar::item {
+                background-color: transparent;
+                padding: 4px 10px;
+            }
+
+            QMenuBar::item:selected {
+                background-color: #202020;
+            }
+
+            QMenu {
+                background-color: #2f3032;
+                color: #e0e0e0;
+                border: 1px solid #111111;
+            }
+
+            QMenu::item:selected {
+                background-color: #202020;
             }
 
             QStatusBar {
@@ -93,39 +119,24 @@ class MainWindow(QMainWindow):
                 color: #c2c4c7;
             }
             """
-        ]
+        )
 
+    def _apply_native_dark_titlebar(self) -> None:
         if not sys.platform.startswith("win"):
-            style.append(
-                """
-                QMenuBar {
-                    background-color: #2f3032;
-                    color: #f2f2f2;
-                    border-bottom: 1px solid #111111;
-                }
-
-                QMenuBar::item {
-                    background-color: transparent;
-                    padding: 4px 10px;
-                }
-
-                QMenuBar::item:selected {
-                    background-color: #202020;
-                }
-
-                QMenu {
-                    background-color: #2f3032;
-                    color: #e0e0e0;
-                    border: 1px solid #111111;
-                }
-
-                QMenu::item:selected {
-                    background-color: #202020;
-                }
-                """
-            )
-
-        self.setStyleSheet("".join(style))
+            return
+        try:
+            hwnd = int(self.winId())
+            value = ctypes.c_int(1)
+            dwmapi = ctypes.windll.dwmapi
+            for attribute in (20, 19):
+                dwmapi.DwmSetWindowAttribute(
+                    hwnd,
+                    attribute,
+                    ctypes.byref(value),
+                    ctypes.sizeof(value),
+                )
+        except Exception:
+            pass
 
     def _create_actions(self) -> None:
         self.openAction = QAction("Open…", self)
@@ -420,10 +431,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(APP_NAME)
     app.setOrganizationName(ORG_NAME)
-    if sys.platform.startswith("win"):
-        app.setStyle("WindowsVista")
-    else:
-        app.setStyle("Fusion")
+    app.setStyle("Fusion")
 
     window = MainWindow()
     if sys.platform.startswith("win"):
