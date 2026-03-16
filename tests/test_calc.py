@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from calc import build_hover_previews, find_inline_completion, token_at_column
+from calc import (
+    build_hover_previews,
+    find_inline_completion,
+    scale_scroll_value,
+    should_reserve_horizontal_scrollbar_space,
+    token_at_column,
+)
 from engine import LineEvaluation
 from toolButtons import TOKEN_SIGNATURES
 
@@ -82,3 +88,21 @@ def test_build_hover_previews_uses_display_values():
     assert previews["x"] == "x = 10"
     assert previews["line1"] == "line1 = 10"
     assert previews["line2"] == "line2 = 20"
+
+
+def test_scale_scroll_value_clamps_to_target_max_at_bottom():
+    assert scale_scroll_value(0, 103, 103, 0, 97) == 97
+
+
+def test_scale_scroll_value_preserves_matching_positions_when_in_range():
+    assert scale_scroll_value(0, 120, 60, 0, 90) == 60
+
+
+def test_scale_scroll_value_handles_non_scrollable_targets():
+    assert scale_scroll_value(0, 120, 60, 0, 0) == 0
+
+
+def test_should_reserve_horizontal_scrollbar_space_when_either_pane_overflows():
+    assert should_reserve_horizontal_scrollbar_space(0, 10) is True
+    assert should_reserve_horizontal_scrollbar_space(5, 0) is True
+    assert should_reserve_horizontal_scrollbar_space(0, 0) is False

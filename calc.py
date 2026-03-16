@@ -41,6 +41,21 @@ class InlineCompletion:
     insert_text: str
 
 
+def scale_scroll_value(
+    source_min: int,
+    source_max: int,
+    source_value: int,
+    target_min: int,
+    target_max: int,
+) -> int:
+    del source_max
+    return max(target_min, min(source_value, target_max))
+
+
+def should_reserve_horizontal_scrollbar_space(*maximums: int) -> bool:
+    return any(maximum > 0 for maximum in maximums)
+
+
 def token_at_column(line_text: str, column: int) -> str | None:
     for match in HOVER_TOKEN_RE.finditer(line_text):
         if match.start() <= column < match.end():
@@ -398,6 +413,7 @@ class MainWidget(QWidget):
 
         self.engine = CalculationEngine(EngineConfig())
         self.last_evaluations = []
+        self._syncing_scrollbars = False
 
         self.textEdit = ScratchpadTextEdit(toolButtons.TOKEN_SIGNATURES)
         self.resDisp = QPlainTextEdit()
@@ -468,12 +484,8 @@ class MainWidget(QWidget):
         self._build_layout()
 
         self.textEdit.textChanged.connect(self.updateResults)
-        self.textEdit.verticalScrollBar().valueChanged.connect(
-            self.resDisp.verticalScrollBar().setValue
-        )
-        self.resDisp.verticalScrollBar().valueChanged.connect(
-            self.textEdit.verticalScrollBar().setValue
-        )
+        self._connect_vertical_scrollbars()
+        self._connect_horizontal_scrollbar_policies()
 
         self.updateResults()
 
@@ -672,6 +684,73 @@ class MainWidget(QWidget):
         grid.setColumnStretch(1, 1)
         grid.setRowStretch(1, 1)
 
+    def _connect_vertical_scrollbars(self) -> None:
+        editor_scrollbar = self.textEdit.verticalScrollBar()
+        result_scrollbar = self.resDisp.verticalScrollBar()
+        editor_scrollbar.valueChanged.connect(self._sync_results_scroll_from_editor)
+        result_scrollbar.valueChanged.connect(self._sync_editor_scroll_from_results)
+
+    def _connect_horizontal_scrollbar_policies(self) -> None:
+        self.textEdit.horizontalScrollBar().rangeChanged.connect(
+            self._sync_horizontal_scrollbar_policies
+        )
+        self.resDisp.horizontalScrollBar().rangeChanged.connect(
+            self._sync_horizontal_scrollbar_policies
+        )
+
+    def _sync_horizontal_scrollbar_policies(self, *_args) -> None:
+        reserve_space = should_reserve_horizontal_scrollbar_space(
+            self.textEdit.horizontalScrollBar().maximum(),
+            self.resDisp.horizontalScrollBar().maximum(),
+        )
+        policy = (
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+            if reserve_space
+            else Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        if self.textEdit.horizontalScrollBarPolicy() != policy:
+            self.textEdit.setHorizontalScrollBarPolicy(policy)
+        if self.resDisp.horizontalScrollBarPolicy() != policy:
+            self.resDisp.setHorizontalScrollBarPolicy(policy)
+
+    def _sync_results_scroll_from_editor(self, source_value: int) -> None:
+        self._sync_scrollbar_value(
+            self.textEdit.verticalScrollBar(),
+            self.resDisp.verticalScrollBar(),
+            source_value,
+        )
+
+    def _sync_editor_scroll_from_results(self, source_value: int) -> None:
+        self._sync_scrollbar_value(
+            self.resDisp.verticalScrollBar(),
+            self.textEdit.verticalScrollBar(),
+            source_value,
+        )
+
+    def _sync_scrollbar_value(self, source_scrollbar, target_scrollbar, source_value: int) -> None:
+        if self._syncing_scrollbars:
+            return
+        source_value = max(source_scrollbar.minimum(), min(source_value, source_scrollbar.maximum()))
+        target_value = scale_scroll_value(
+            source_scrollbar.minimum(),
+            source_scrollbar.maximum(),
+            source_value,
+            target_scrollbar.minimum(),
+            target_scrollbar.maximum(),
+        )
+        source_needs_update = source_scrollbar.value() != source_value
+        target_needs_update = target_scrollbar.value() != target_value
+        if not source_needs_update and not target_needs_update:
+            return
+        self._syncing_scrollbars = True
+        try:
+            if source_needs_update:
+                source_scrollbar.setValue(source_value)
+            if target_needs_update:
+                target_scrollbar.setValue(target_value)
+        finally:
+            self._syncing_scrollbars = False
+
     def updateResults(self) -> None:
         text = self.textEdit.toPlainText()
         self.last_evaluations = self.engine.evaluate_document(text)
@@ -679,6 +758,12 @@ class MainWidget(QWidget):
         result_text = "\n".join(self._display_text_for_line(evaluation) for evaluation in self.last_evaluations)
         with QSignalBlocker(self.resDisp):
             self.resDisp.setPlainText(result_text)
+        self._sync_horizontal_scrollbar_policies()
+        self._sync_scrollbar_value(
+            self.textEdit.verticalScrollBar(),
+            self.resDisp.verticalScrollBar(),
+            self.textEdit.verticalScrollBar().value(),
+        )
 
     def _display_text_for_line(self, evaluation) -> str:
         if evaluation.display:
