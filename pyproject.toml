@@ -43,6 +43,7 @@ py-modules = [
 [tool.setuptools.data-files]
 "." = [
     "MonsterApp.png",
+    "Monster.ico",
     "demo.txt",
     "release_notes.txt",
     "UserGuide.html",

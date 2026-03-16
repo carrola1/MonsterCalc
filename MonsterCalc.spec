@@ -7,6 +7,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [
     ("MonsterApp.png", "."),
+    ("Monster.ico", "."),
     ("demo.txt", "."),
     ("release_notes.txt", "."),
     ("UserGuide.html", "."),

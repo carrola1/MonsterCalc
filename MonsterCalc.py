@@ -14,6 +14,7 @@ from qt_compat import QMessageBox, QPixmap, QSettings, Qt, QUrl, configure_qt_en
 APP_NAME = "MonsterCalc"
 APP_VERSION = "2.0"
 ORG_NAME = "Andrew Carroll"
+WINDOWS_APP_ID = "MonsterCalc.MonsterCalc"
 LEGACY_SETTINGS = ("company", "MonsterCalc")
 PACKAGED_WELCOME_KEY = "packaged_welcome_initialized"
 
@@ -31,6 +32,15 @@ def _coerce_int(value, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _apply_windows_app_id() -> None:
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(WINDOWS_APP_ID)
+    except Exception:
+        pass
 
 
 class MainWindow(QMainWindow):
@@ -52,9 +62,10 @@ class MainWindow(QMainWindow):
         self._apply_window_style()
 
     def _configure_window(self) -> None:
-        icon_path = resource_path("app_icon")
-        self.setWindowIcon(QIcon(str(icon_path)))
-        self.monster_icon = self._scaled_dialog_icon(icon_path, 56)
+        window_icon_path = resource_path("window_icon")
+        artwork_path = resource_path("app_icon")
+        self.setWindowIcon(QIcon(str(window_icon_path)))
+        self.monster_icon = self._scaled_dialog_icon(artwork_path, 56)
         self.setWindowTitle(APP_NAME)
         screen = QApplication.primaryScreen()
         if screen is not None:
@@ -427,17 +438,15 @@ class MainWindow(QMainWindow):
 
 
 def main() -> int:
+    _apply_windows_app_id()
     configure_qt_environment()
     app = QApplication(sys.argv)
     app.setApplicationDisplayName(APP_NAME)
     app.setOrganizationName(ORG_NAME)
     app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("window_icon"))))
 
     window = MainWindow()
-    if sys.platform.startswith("win"):
-        app_id = "MonsterCalc.MonsterCalc"
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
-
     window.show()
     window.editor.textEdit.setFocus()
 
