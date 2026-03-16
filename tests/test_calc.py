@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from calc import (
     build_hover_previews,
+    build_result_hover_previews,
     find_inline_completion,
     scale_scroll_value,
     should_reserve_horizontal_scrollbar_space,
@@ -88,6 +89,20 @@ def test_build_hover_previews_uses_display_values():
     assert previews["x"] == "x = 10"
     assert previews["line1"] == "line1 = 10"
     assert previews["line2"] == "line2 = 20"
+
+
+def test_build_result_hover_previews_includes_integer_conversions():
+    previews = build_result_hover_previews(
+        [
+            LineEvaluation(source="255", value=255, display="255"),
+            LineEvaluation(source="x = 10k", value=10000, display="10k", assignment_name="x"),
+            LineEvaluation(source="2.5", value=2.5, display="2.5"),
+        ]
+    )
+
+    assert previews[1] == "default: 255\ndec: 255\nhex: 0xff\nbin: 0b11111111"
+    assert previews[2] == "default: 10k\ndec: 10000\nhex: 0x2710\nbin: 0b10011100010000"
+    assert 3 not in previews
 
 
 def test_scale_scroll_value_clamps_to_target_max_at_bottom():

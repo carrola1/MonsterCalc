@@ -75,6 +75,25 @@ def build_hover_previews(evaluations) -> dict[str, str]:
     return previews
 
 
+def build_result_hover_previews(evaluations) -> dict[int, str]:
+    previews: dict[int, str] = {}
+    for line_number, evaluation in enumerate(evaluations, start=1):
+        value = evaluation.value
+        if not isinstance(value, int) or isinstance(value, bool):
+            continue
+        if not evaluation.display:
+            continue
+        previews[line_number] = "\n".join(
+            (
+                f"default: {evaluation.display}",
+                f"dec: {value}",
+                f"hex: {hex(value)}",
+                f"bin: {bin(value)}",
+            )
+        )
+    return previews
+
+
 def find_inline_completion(
     line_text: str,
     cursor_column: int,
@@ -407,6 +426,30 @@ class LineNumberArea(QWidget):
         super().mousePressEvent(event)
 
 
+class ResultTextEdit(QPlainTextEdit):
+    def __init__(self):
+        super().__init__()
+        self.lineHoverPreviews: dict[int, str] = {}
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+
+    def setLineHoverPreviews(self, previews: dict[int, str]) -> None:
+        self.lineHoverPreviews = previews
+
+    def mouseMoveEvent(self, event) -> None:
+        super().mouseMoveEvent(event)
+        line_number = self.cursorForPosition(event.position().toPoint()).blockNumber() + 1
+        preview = self.lineHoverPreviews.get(line_number)
+        if preview is None:
+            QToolTip.hideText()
+            return
+        QToolTip.showText(event.globalPosition().toPoint(), preview, self)
+
+    def leaveEvent(self, event) -> None:
+        super().leaveEvent(event)
+        QToolTip.hideText()
+
+
 class MainWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -416,7 +459,7 @@ class MainWidget(QWidget):
         self._syncing_scrollbars = False
 
         self.textEdit = ScratchpadTextEdit(toolButtons.TOKEN_SIGNATURES)
-        self.resDisp = QPlainTextEdit()
+        self.resDisp = ResultTextEdit()
         self.headerIcon = QLabel()
         self.headerTitle = QLabel("MONSTER CALC")
         self.eeTool = QToolButton()
@@ -755,6 +798,7 @@ class MainWidget(QWidget):
         text = self.textEdit.toPlainText()
         self.last_evaluations = self.engine.evaluate_document(text)
         self.textEdit.setHoverPreviews(build_hover_previews(self.last_evaluations))
+        self.resDisp.setLineHoverPreviews(build_result_hover_previews(self.last_evaluations))
         result_text = "\n".join(self._display_text_for_line(evaluation) for evaluation in self.last_evaluations)
         with QSignalBlocker(self.resDisp):
             self.resDisp.setPlainText(result_text)

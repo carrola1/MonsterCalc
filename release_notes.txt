@@ -4,6 +4,7 @@ v2.0 Mar 2026
     - [Feature]: Added automated tests for engine logic and UI smoke coverage
     - [Feature]: Added inline autocomplete and live function argument hints
     - [Feature]: Added lighter helper hints for built-in functions in the results pane
+    - [Feature]: Added result hover previews for integer values with default, decimal, hex, and binary views
     - [Feature]: Added editor line numbers with clickable line references and new lineX result lookup support
     - [Feature]: Added bitpunch() helper for setting or clearing individual bits
     - [Feature]: Added Help -> User Guide with full local HTML documentation
