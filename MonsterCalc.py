@@ -136,7 +136,7 @@ def _normalize_sheet_path(filename: str, selected_filter: str) -> Path:
 class LoadSheetDialog(QDialog):
     def __init__(self, sheets: list[AutoSavedSheet], parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Load Sheet")
+        self.setWindowTitle("Load Recent")
         self.setMinimumWidth(520)
         self.sheetList = QListWidget(self)
         self.buttons = QDialogButtonBox(
@@ -291,7 +291,7 @@ class MainWindow(QMainWindow):
         self.newSheetAction.setShortcut(QKeySequence.StandardKey.New)
         self.newSheetAction.triggered.connect(self.newSheet)
 
-        self.loadSheetAction = QAction("Load Sheet…", self)
+        self.loadSheetAction = QAction("Load Recent…", self)
         self.loadSheetAction.triggered.connect(self.loadSheetDialog)
 
         self.openAction = QAction("Open…", self)
@@ -499,7 +499,7 @@ class MainWindow(QMainWindow):
         if not sheets:
             QMessageBox.information(
                 self,
-                "Load Sheet",
+                "Load Recent",
                 "No autosaved sheets are available yet.",
             )
             return
@@ -517,7 +517,7 @@ class MainWindow(QMainWindow):
             self.save_path = None
             self.statusBar().showMessage(f"Loaded {sheet_path.name}", 3000)
         except OSError as exc:
-            self._show_error("Load Sheet Failed", f"Could not load sheet.\n\n{exc}")
+            self._show_error("Load Recent Failed", f"Could not load sheet.\n\n{exc}")
 
     def clearAll(self) -> None:
         self.editor.clear()
