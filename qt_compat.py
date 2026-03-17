@@ -10,11 +10,13 @@ QT_API = ""
 try:
     import PySide6 as _qt_package
 
-    from PySide6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker, Qt, QUrl
+    from PySide6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker
+    from PySide6.QtCore import QStandardPaths, Qt, QUrl
     from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
     from PySide6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
-    from PySide6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog
-    from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPlainTextEdit, QSplitter
+    from PySide6.QtWidgets import QApplication, QCheckBox, QDialog, QDialogButtonBox, QFileDialog
+    from PySide6.QtWidgets import QGridLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem
+    from PySide6.QtWidgets import QMainWindow, QMessageBox, QPlainTextEdit, QSplitter, QVBoxLayout
     from PySide6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
 
     QT_API = "PySide6"
@@ -25,11 +27,13 @@ except ImportError:
 
     import PyQt6 as _qt_package
 
-    from PyQt6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker, Qt, QUrl
+    from PyQt6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker
+    from PyQt6.QtCore import QStandardPaths, Qt, QUrl
     from PyQt6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
     from PyQt6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
-    from PyQt6.QtWidgets import QApplication, QCheckBox, QFileDialog, QGridLayout, QInputDialog
-    from PyQt6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPlainTextEdit, QSplitter
+    from PyQt6.QtWidgets import QApplication, QCheckBox, QDialog, QDialogButtonBox, QFileDialog
+    from PyQt6.QtWidgets import QGridLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem
+    from PyQt6.QtWidgets import QMainWindow, QMessageBox, QPlainTextEdit, QSplitter, QVBoxLayout
     from PyQt6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
 
     QT_API = "PyQt6"

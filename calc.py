@@ -462,6 +462,7 @@ class MainWidget(QWidget):
         self.resDisp = ResultTextEdit()
         self.headerIcon = QLabel()
         self.headerTitle = QLabel("MONSTER CALC")
+        self.newSheetTool = QToolButton()
         self.eeTool = QToolButton()
         self.funcTool = QToolButton()
         self.symTool = QToolButton()
@@ -620,6 +621,20 @@ class MainWidget(QWidget):
                 width: 16px;
             }
 
+            QToolButton#newSheetTool {
+                background-color: #3f4043;
+                border: 1px solid #1b1b1b;
+                border-radius: 10px;
+                font-size: 24px;
+                font-weight: 700;
+                padding: 0px 0px 4px 0px;
+            }
+
+            QToolButton#newSheetTool:hover {
+                background-color: #4d4f53;
+                border: 1px solid #98b63a;
+            }
+
             QMenu {
                 background-color: #2f3032;
                 border: 1px solid #1b1b1b;
@@ -678,6 +693,9 @@ class MainWidget(QWidget):
         return scaled
 
     def _configure_tool_buttons(self) -> None:
+        self.newSheetTool.setText("+")
+        self.newSheetTool.setObjectName("newSheetTool")
+        self.newSheetTool.setToolTip("New Sheet")
         self.eeTool.setText("EE")
         self.funcTool.setText("Math")
         self.symTool.setText("Symbols")
@@ -711,6 +729,7 @@ class MainWidget(QWidget):
         self.funcTool.setFixedWidth(90)
         self.symTool.setFixedWidth(104)
         self.unitTool.setFixedWidth(88)
+        self.newSheetTool.setFixedSize(42, 34)
         self.eeTool.setFixedWidth(68)
         self.funcTool.setMinimumHeight(34)
         self.symTool.setMinimumHeight(34)
@@ -719,11 +738,12 @@ class MainWidget(QWidget):
 
         grid.addWidget(self.headerIcon, 0, 0, 1, 1, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         grid.addWidget(self.headerTitle, 0, 1, 1, 1, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(self.unitTool, 0, 2, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(self.symTool, 0, 3, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(self.funcTool, 0, 4, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(self.eeTool, 0, 5, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(self.splitEdit, 1, 0, 1, 6)
+        grid.addWidget(self.newSheetTool, 0, 2, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.unitTool, 0, 3, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.symTool, 0, 4, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.funcTool, 0, 5, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.eeTool, 0, 6, 1, 1, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.splitEdit, 1, 0, 1, 7)
         grid.setColumnStretch(1, 1)
         grid.setRowStretch(1, 1)
 

@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from MonsterCalc import MainWindow
 from calc import MainWidget
 
 
@@ -68,3 +69,15 @@ def test_main_widget_can_insert_line_reference_token(qtbot):
     widget.textEdit.insertLineReference(1)
 
     assert widget.textEdit.toPlainText().endswith("line1")
+
+
+def test_main_window_new_sheet_button_autosaves_current_content(qtbot, tmp_path):
+    window = MainWindow()
+    window.autosave_dir = tmp_path
+    qtbot.addWidget(window)
+    window.editor.textEdit.setPlainText("current sheet")
+
+    window.editor.newSheetTool.click()
+
+    assert window.editor.textEdit.toPlainText() == ""
+    assert len(list(tmp_path.glob("*.mcalc"))) == 1
