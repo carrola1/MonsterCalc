@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import dataclass
 
 import toolButtons
@@ -28,6 +29,22 @@ TITLE_FONT_FAMILIES = [
     "Baskerville",
     "Times New Roman",
 ]
+
+ACCENT_GREEN = "#8fab24"
+ACCENT_GREEN_BRIGHT = "#9abb2d"
+WINDOW_BG = "#26292b"
+PANEL_BG = "#26292b"
+EDITOR_BG = "#1a1b1d"
+RESULTS_BG = "#1a1b1d"
+GUTTER_BG = "#141618"
+BUTTON_BG = "#303338"
+BUTTON_HOVER_BG = "#3a3e44"
+BORDER_DARK = "#090909"
+TEXT_PRIMARY = "#f2f3f4"
+TEXT_SECONDARY = "#c8ccd1"
+TEXT_MUTED = "#77808a"
+RESULT_CLICK_MAX_SECONDS = 0.35
+RESULT_CLICK_MAX_DISTANCE = 6
 
 TOKEN_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)$")
 TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")
@@ -92,6 +109,31 @@ def build_result_hover_previews(evaluations) -> dict[int, str]:
             )
         )
     return previews
+
+
+def build_clickable_result_lines(evaluations) -> set[int]:
+    return {
+        line_number
+        for line_number, evaluation in enumerate(evaluations, start=1)
+        if evaluation.display
+    }
+
+
+def should_insert_line_reference_from_result_click(
+    *,
+    press_duration_seconds: float,
+    move_distance: int,
+    line_number: int | None,
+    clickable_lines: set[int],
+    has_selection: bool,
+) -> bool:
+    return (
+        press_duration_seconds <= RESULT_CLICK_MAX_SECONDS
+        and move_distance <= RESULT_CLICK_MAX_DISTANCE
+        and line_number is not None
+        and line_number in clickable_lines
+        and not has_selection
+    )
 
 
 def find_inline_completion(
@@ -264,6 +306,10 @@ def closing_paren_suffix_span(line_text: str, cursor_column: int) -> int | None:
     return suffix.index(")") + 1
 
 
+def should_consume_existing_closing_paren(line_text: str, cursor_column: int) -> bool:
+    return 0 <= cursor_column < len(line_text) and line_text[cursor_column] == ")"
+
+
 class ScratchpadTextEdit(QPlainTextEdit):
     def __init__(self, signatures: dict[str, str]):
         super().__init__()
@@ -276,7 +322,7 @@ class ScratchpadTextEdit(QPlainTextEdit):
         self.completionLabel.hide()
         self.completionLabel.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.completionLabel.setStyleSheet(
-            "color: #7f8790; background-color: transparent; padding: 0px;"
+            f"color: {TEXT_MUTED}; background-color: transparent; padding: 0px;"
         )
 
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
@@ -318,6 +364,18 @@ class ScratchpadTextEdit(QPlainTextEdit):
             self.insertPlainText(self.inline_completion.insert_text)
             self._refresh_completion()
             return
+        if event.text() == ")":
+            cursor = self.textCursor()
+            if not cursor.hasSelection():
+                block_text = cursor.block().text()
+                if should_consume_existing_closing_paren(
+                    block_text,
+                    cursor.positionInBlock(),
+                ):
+                    cursor.movePosition(cursor.MoveOperation.Right)
+                    self.setTextCursor(cursor)
+                    self._refresh_completion()
+                    return
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             cursor = self.textCursor()
             if not cursor.hasSelection():
@@ -351,10 +409,9 @@ class ScratchpadTextEdit(QPlainTextEdit):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
-        rect = self.contentsRect()
-        self.lineNumberArea.setGeometry(
-            QRect(rect.left(), rect.top(), self.lineNumberAreaWidth(), rect.height())
-        )
+        rect = self.rect()
+        self.lineNumberArea.setGeometry(QRect(0, 0, self.lineNumberAreaWidth() + 1, rect.height()))
+        self.lineNumberArea.raise_()
         self._refresh_completion()
 
     def focusOutEvent(self, event) -> None:
@@ -372,18 +429,30 @@ class ScratchpadTextEdit(QPlainTextEdit):
 
     def lineNumberAreaPaintEvent(self, event) -> None:
         painter = QPainter(self.lineNumberArea)
-        painter.fillRect(event.rect(), QColor("#1b1c1d"))
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(Qt.PenStyle.NoPen)
+        gutter_rect = self.lineNumberArea.rect().adjusted(0, 0, -1, -1)
+        painter.setBrush(QColor(GUTTER_BG))
+        painter.drawRoundedRect(gutter_rect, 6, 6)
+        painter.fillRect(
+            self.lineNumberArea.width() - 1,
+            6,
+            1,
+            max(0, self.lineNumberArea.height() - 12),
+            QColor("#23262a"),
+        )
 
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
-        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
+        vertical_offset = self.contentsRect().top()
+        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top()) + vertical_offset
         bottom = top + int(self.blockBoundingRect(block).height())
 
         active_line = self.textCursor().blockNumber()
         while block.isValid() and top <= event.rect().bottom():
             if block.isVisible() and bottom >= event.rect().top():
                 number = str(block_number + 1)
-                color = QColor("#98ad43") if block_number == active_line else QColor("#6f7680")
+                color = QColor(ACCENT_GREEN) if block_number == active_line else QColor(TEXT_MUTED)
                 painter.setPen(color)
                 painter.drawText(
                     0,
@@ -402,7 +471,7 @@ class ScratchpadTextEdit(QPlainTextEdit):
     def lineNumberForY(self, y_pos: int) -> int | None:
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
-        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
+        top = int(self.blockBoundingGeometry(block).translated(self.contentOffset()).top()) + self.contentsRect().top()
         bottom = top + int(self.blockBoundingRect(block).height())
 
         while block.isValid():
@@ -504,11 +573,53 @@ class ResultTextEdit(QPlainTextEdit):
     def __init__(self):
         super().__init__()
         self.lineHoverPreviews: dict[int, str] = {}
+        self.clickableLineNumbers: set[int] = set()
+        self._lineReferenceCallback = None
+        self._pressStartTime = 0.0
+        self._pressPosition = None
+        self._pressLineNumber: int | None = None
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
 
     def setLineHoverPreviews(self, previews: dict[int, str]) -> None:
         self.lineHoverPreviews = previews
+
+    def setClickableLineNumbers(self, line_numbers: set[int]) -> None:
+        self.clickableLineNumbers = set(line_numbers)
+
+    def setLineReferenceCallback(self, callback) -> None:
+        self._lineReferenceCallback = callback
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._pressStartTime = time.monotonic()
+            self._pressPosition = event.position().toPoint()
+            self._pressLineNumber = self.cursorForPosition(self._pressPosition).blockNumber() + 1
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:
+        press_position = self._pressPosition
+        press_line_number = self._pressLineNumber
+        press_duration = time.monotonic() - self._pressStartTime
+        super().mouseReleaseEvent(event)
+        self._pressPosition = None
+        self._pressLineNumber = None
+
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+        if press_position is None or self._lineReferenceCallback is None:
+            return
+
+        release_position = event.position().toPoint()
+        should_insert = should_insert_line_reference_from_result_click(
+            press_duration_seconds=press_duration,
+            move_distance=(release_position - press_position).manhattanLength(),
+            line_number=press_line_number,
+            clickable_lines=self.clickableLineNumbers,
+            has_selection=self.textCursor().hasSelection(),
+        )
+        if should_insert:
+            self._lineReferenceCallback(press_line_number)
 
     def mouseMoveEvent(self, event) -> None:
         super().mouseMoveEvent(event)
@@ -629,6 +740,7 @@ class MainWidget(QWidget):
         self.resDisp.setReadOnly(True)
         self.resDisp.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
         self.resDisp.setTabStopDistance(32)
+        self.resDisp.setLineReferenceCallback(self.textEdit.insertLineReference)
 
         self.splitEdit.setChildrenCollapsible(False)
         self.splitEdit.setHandleWidth(2)
@@ -640,8 +752,12 @@ class MainWidget(QWidget):
         self.setStyleSheet(
             """
             QWidget {
-                background-color: #2f3032;
-                color: #f0f0f0;
+                background-color: """
+            + WINDOW_BG
+            + """;
+                color: """
+            + TEXT_PRIMARY
+            + """;
             }
 
             QLabel#headerIcon {
@@ -651,37 +767,53 @@ class MainWidget(QWidget):
             }
 
             QLabel#headerTitle {
-                color: #a7c53f;
+                color: """
+            + ACCENT_GREEN
+            + """;
                 font-size: 20px;
                 font-weight: 700;
                 letter-spacing: 0.16em;
             }
 
             QPlainTextEdit {
-                border: 1px solid #121212;
+                border: 1px solid """
+            + BORDER_DARK
+            + """;
                 border-radius: 6px;
                 padding: 10px;
                 selection-color: #111111;
-                selection-background-color: #98ad43;
+                selection-background-color: """
+            + ACCENT_GREEN
+            + """;
             }
 
             QPlainTextEdit:focus {
-                border: 1px solid #8ea53a;
+                border: 1px solid #2a2d31;
             }
 
             QToolButton {
-                background-color: #47484b;
-                border: 1px solid #1b1b1b;
+                background-color: """
+            + BUTTON_BG
+            + """;
+                border: 1px solid """
+            + BORDER_DARK
+            + """;
                 border-radius: 6px;
-                color: #f0f0f0;
+                color: """
+            + TEXT_PRIMARY
+            + """;
                 font-size: 13px;
                 font-weight: 600;
                 padding: 6px 24px 6px 12px;
             }
 
             QToolButton:hover {
-                background-color: #54565a;
-                border: 1px solid #98b63a;
+                background-color: """
+            + BUTTON_HOVER_BG
+            + """;
+                border: 1px solid """
+            + ACCENT_GREEN_BRIGHT
+            + """;
             }
 
             QToolButton::menu-indicator {
@@ -696,8 +828,12 @@ class MainWidget(QWidget):
             }
 
             QToolButton#newSheetTool {
-                background-color: #3f4043;
-                border: 1px solid #1b1b1b;
+                background-color: """
+            + BUTTON_BG
+            + """;
+                border: 1px solid """
+            + BORDER_DARK
+            + """;
                 border-radius: 10px;
                 font-size: 24px;
                 font-weight: 700;
@@ -705,14 +841,24 @@ class MainWidget(QWidget):
             }
 
             QToolButton#newSheetTool:hover {
-                background-color: #4d4f53;
-                border: 1px solid #98b63a;
+                background-color: """
+            + BUTTON_HOVER_BG
+            + """;
+                border: 1px solid """
+            + ACCENT_GREEN_BRIGHT
+            + """;
             }
 
             QMenu {
-                background-color: #2f3032;
-                border: 1px solid #1b1b1b;
-                color: #e6e6e6;
+                background-color: """
+            + PANEL_BG
+            + """;
+                border: 1px solid """
+            + BORDER_DARK
+            + """;
+                color: """
+            + TEXT_PRIMARY
+            + """;
                 padding: 5px;
             }
 
@@ -722,23 +868,64 @@ class MainWidget(QWidget):
             }
 
             QMenu::item:selected {
-                background-color: #4b512f;
+                background-color: #30381b;
                 color: #f7f7f7;
             }
 
             QMenu::item:disabled {
-                color: #8b8b8b;
+                color: """
+            + TEXT_MUTED
+            + """;
                 background-color: transparent;
             }
 
             QSplitter::handle {
-                background-color: #111111;
+                background-color: """
+            + BORDER_DARK
+            + """;
+            }
+
+            QScrollBar:vertical {
+                background: transparent;
+                width: 8px;
+                margin: 2px 2px 2px 0px;
+            }
+
+            QScrollBar:horizontal {
+                background: transparent;
+                height: 8px;
+                margin: 0px 2px 2px 2px;
+            }
+
+            QScrollBar::handle:vertical,
+            QScrollBar::handle:horizontal {
+                background: #6f7781;
+                border-radius: 4px;
+                min-height: 28px;
+                min-width: 28px;
+            }
+
+            QScrollBar::handle:vertical:hover,
+            QScrollBar::handle:horizontal:hover {
+                background: #8a949f;
+            }
+
+            QScrollBar::add-line,
+            QScrollBar::sub-line,
+            QScrollBar::add-page,
+            QScrollBar::sub-page {
+                background: transparent;
+                border: none;
             }
             """
         )
 
-        self.textEdit.setStyleSheet("background-color: #242527; color: #f4f4f4;")
-        self.resDisp.setStyleSheet("background-color: #c1c3c7; color: #1d1d1d;")
+        self.textEdit.setStyleSheet(
+            f"background-color: {EDITOR_BG}; color: {TEXT_PRIMARY};"
+        )
+        self.resDisp.setStyleSheet(
+            f"background-color: {RESULTS_BG}; color: {TEXT_SECONDARY};"
+        )
 
     def _configure_header(self) -> None:
         icon = self._scaled_icon_pixmap(40)
@@ -841,7 +1028,7 @@ class MainWidget(QWidget):
             self.resDisp.horizontalScrollBar().maximum(),
         )
         policy = (
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
             if reserve_space
             else Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
@@ -893,6 +1080,7 @@ class MainWidget(QWidget):
         self.last_evaluations = self.engine.evaluate_document(text)
         self.textEdit.setHoverPreviews(build_hover_previews(self.last_evaluations))
         self.resDisp.setLineHoverPreviews(build_result_hover_previews(self.last_evaluations))
+        self.resDisp.setClickableLineNumbers(build_clickable_result_lines(self.last_evaluations))
         result_text = "\n".join(self._display_text_for_line(evaluation) for evaluation in self.last_evaluations)
         with QSignalBlocker(self.resDisp):
             self.resDisp.setPlainText(result_text)

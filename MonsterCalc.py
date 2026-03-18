@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
             )
         else:
             self.resize(760, 560)
-        self.statusBar().showMessage("Ready")
+        self.statusBar().clearMessage()
         self._apply_native_dark_titlebar()
 
     def _scaled_dialog_icon(self, image_path: Path, logical_size: int) -> QPixmap:
@@ -234,13 +234,13 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(
             """
             QMainWindow {
-                background-color: #2f3032;
+                background-color: #26292b;
             }
 
             QMenuBar {
-                background-color: #2f3032;
-                color: #f2f2f2;
-                border-bottom: 1px solid #111111;
+                background-color: #26292b;
+                color: #f2f3f4;
+                border-bottom: 1px solid #090909;
             }
 
             QMenuBar::item {
@@ -249,22 +249,22 @@ class MainWindow(QMainWindow):
             }
 
             QMenuBar::item:selected {
-                background-color: #202020;
+                background-color: #303338;
             }
 
             QMenu {
-                background-color: #2f3032;
-                color: #e0e0e0;
-                border: 1px solid #111111;
+                background-color: #26292b;
+                color: #f2f3f4;
+                border: 1px solid #090909;
             }
 
             QMenu::item:selected {
-                background-color: #202020;
+                background-color: #30381b;
             }
 
             QStatusBar {
-                background-color: #2f3032;
-                color: #c2c4c7;
+                background-color: #26292b;
+                color: #b9c0c8;
             }
             """
         )

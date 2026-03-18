@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from calc import (
+    build_clickable_result_lines,
     build_hover_previews,
     build_result_hover_previews,
     closing_paren_suffix_span,
     find_inline_completion,
     scale_scroll_value,
+    should_consume_existing_closing_paren,
+    should_insert_line_reference_from_result_click,
     should_auto_insert_closing_paren,
     should_reserve_horizontal_scrollbar_space,
     token_at_column,
@@ -91,6 +94,13 @@ def test_closing_paren_suffix_span_detects_single_closer_suffix():
     assert closing_paren_suffix_span("bin(5) + 1", 5) is None
 
 
+def test_should_consume_existing_closing_paren_only_when_cursor_is_on_closer():
+    assert should_consume_existing_closing_paren("bin(5)", 5) is True
+    assert should_consume_existing_closing_paren("bin(5)", 4) is False
+    assert should_consume_existing_closing_paren("bin(5) + 1", 5) is True
+    assert should_consume_existing_closing_paren("bin(5", 5) is False
+
+
 def test_token_at_column_finds_variable_and_line_refs():
     assert token_at_column("line12 + total", 2) == "line12"
     assert token_at_column("line12 + total", 10) == "total"
@@ -122,6 +132,60 @@ def test_build_result_hover_previews_includes_integer_conversions():
     assert previews[1] == "default: 255\ndec: 255\nhex: 0xff\nbin: 0b11111111"
     assert previews[2] == "default: 10k\ndec: 10000\nhex: 0x2710\nbin: 0b10011100010000"
     assert 3 not in previews
+
+
+def test_build_clickable_result_lines_uses_only_visible_results():
+    clickable = build_clickable_result_lines(
+        [
+            LineEvaluation(source="10", display="10"),
+            LineEvaluation(source="# comment", display=""),
+            LineEvaluation(source="x = 5", display="5", assignment_name="x"),
+        ]
+    )
+
+    assert clickable == {1, 3}
+
+
+def test_result_click_inserts_line_reference_only_for_quick_clean_clicks():
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is True
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.6,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=12,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=True,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=3,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
 
 
 def test_scale_scroll_value_clamps_to_target_max_at_bottom():

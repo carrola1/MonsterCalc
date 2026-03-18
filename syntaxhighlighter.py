@@ -86,7 +86,7 @@ class ResultHighlighter(QSyntaxHighlighter):
     def __init__(self, document):
         super().__init__(document)
         self.hint_style = QTextCharFormat()
-        self.hint_style.setForeground(QColor("#727b84"))
+        self.hint_style.setForeground(QColor("#6e7882"))
         self.hint_style.setFontItalic(True)
 
     def highlightBlock(self, text: str) -> None:
