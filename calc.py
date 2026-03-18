@@ -185,7 +185,9 @@ def _find_open_call(
 
 
 def _remaining_signature(signature: str, argument_text: str) -> str | None:
-    params = [param.strip() for param in signature.strip()[1:-1].split(",") if param.strip()]
+    params = _signature_params(signature)
+    if params is None:
+        return None
     if not params:
         return None
 
@@ -198,6 +200,15 @@ def _remaining_signature(signature: str, argument_text: str) -> str | None:
         return ", " + ", ".join(params[arg_index + 1 :]) + ")"
 
     return ", ".join(params[arg_index:]) + ")"
+
+
+def _signature_params(signature: str) -> list[str] | None:
+    params = [param.strip() for param in signature.strip()[1:-1].split(",") if param.strip()]
+    if any("..." in param for param in params):
+        return None
+    if not params:
+        return None
+    return params
 
 
 def _argument_progress(argument_text: str) -> tuple[int, str]:
@@ -217,6 +228,40 @@ def _argument_progress(argument_text: str) -> tuple[int, str]:
         current_fragment_chars.append(char)
 
     return arg_index, "".join(current_fragment_chars).strip()
+
+
+def should_auto_insert_closing_paren(
+    line_text: str,
+    cursor_column: int,
+    signatures: dict[str, str],
+) -> bool:
+    before_cursor = line_text[:cursor_column]
+    after_cursor = line_text[cursor_column:]
+    if after_cursor and not after_cursor.isspace():
+        return False
+
+    call_context = _find_open_call(before_cursor, signatures)
+    if call_context is None:
+        return False
+
+    token, argument_text = call_context
+    params = _signature_params(signatures[token])
+    if not params:
+        return False
+
+    arg_index, current_fragment = _argument_progress(argument_text)
+    if arg_index != len(params) - 1 or not current_fragment:
+        return False
+
+    return True
+
+
+def closing_paren_suffix_span(line_text: str, cursor_column: int) -> int | None:
+    suffix = line_text[cursor_column:]
+    stripped = suffix.strip()
+    if stripped != ")":
+        return None
+    return suffix.index(")") + 1
 
 
 class ScratchpadTextEdit(QPlainTextEdit):
@@ -273,7 +318,36 @@ class ScratchpadTextEdit(QPlainTextEdit):
             self.insertPlainText(self.inline_completion.insert_text)
             self._refresh_completion()
             return
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            cursor = self.textCursor()
+            if not cursor.hasSelection():
+                block_text = cursor.block().text()
+                suffix_span = closing_paren_suffix_span(block_text, cursor.positionInBlock())
+                if suffix_span is not None:
+                    cursor.movePosition(cursor.MoveOperation.Right, cursor.MoveMode.MoveAnchor, suffix_span)
+                    cursor.insertBlock()
+                    self.setTextCursor(cursor)
+                    self._refresh_completion()
+                    return
         super().keyPressEvent(event)
+        if event.text() and not event.text().isspace() and len(event.text()) == 1:
+            self._maybe_auto_insert_closing_paren()
+
+    def _maybe_auto_insert_closing_paren(self) -> None:
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            return
+        block = cursor.block()
+        if not should_auto_insert_closing_paren(
+            block.text(),
+            cursor.positionInBlock(),
+            self.signatures,
+        ):
+            return
+        cursor.insertText(")")
+        cursor.movePosition(cursor.MoveOperation.Left)
+        self.setTextCursor(cursor)
+        self._refresh_completion()
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)

@@ -3,8 +3,10 @@ from __future__ import annotations
 from calc import (
     build_hover_previews,
     build_result_hover_previews,
+    closing_paren_suffix_span,
     find_inline_completion,
     scale_scroll_value,
+    should_auto_insert_closing_paren,
     should_reserve_horizontal_scrollbar_space,
     token_at_column,
 )
@@ -70,6 +72,23 @@ def test_find_inline_completion_ignores_short_or_ambiguous_fragments():
     assert find_inline_completion("bi", 2, TOKEN_SIGNATURES) is None
     assert find_inline_completion("bit", 3, TOKEN_SIGNATURES) is None
     assert find_inline_completion("log", 3, TOKEN_SIGNATURES) is None
+
+
+def test_should_auto_insert_closing_paren_for_fixed_arity_final_argument():
+    assert should_auto_insert_closing_paren("bin(5", 5, TOKEN_SIGNATURES) is True
+    assert should_auto_insert_closing_paren("findi(5, 10", 11, TOKEN_SIGNATURES) is True
+
+
+def test_should_auto_insert_closing_paren_skips_non_final_or_existing_closer():
+    assert should_auto_insert_closing_paren("vdiv(5, 10", 10, TOKEN_SIGNATURES) is False
+    assert should_auto_insert_closing_paren("bin(5)", 5, TOKEN_SIGNATURES) is False
+    assert should_auto_insert_closing_paren("min(1", 5, TOKEN_SIGNATURES) is False
+
+
+def test_closing_paren_suffix_span_detects_single_closer_suffix():
+    assert closing_paren_suffix_span("bin(5)", 5) == 1
+    assert closing_paren_suffix_span("bin(5   )", 5) == 4
+    assert closing_paren_suffix_span("bin(5) + 1", 5) is None
 
 
 def test_token_at_column_finds_variable_and_line_refs():

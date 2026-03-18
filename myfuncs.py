@@ -148,6 +148,100 @@ def findrdiv(vin, vout, tol=1):
     return [matchR1, matchR2]
 
 
+def findv(current, resistance):
+    return current * resistance
+
+
+def findi(voltage, resistance):
+    if resistance == 0:
+        raise ValueError("resistance must be non-zero")
+    return voltage / resistance
+
+
+def findr(voltage, current):
+    if current == 0:
+        raise ValueError("current must be non-zero")
+    return voltage / current
+
+
+def xc(frequency, capacitance):
+    if frequency <= 0 or capacitance <= 0:
+        raise ValueError("frequency and capacitance must be positive")
+    return 1 / (2 * math.pi * frequency * capacitance)
+
+
+def xl(frequency, inductance):
+    if frequency <= 0 or inductance <= 0:
+        raise ValueError("frequency and inductance must be positive")
+    return 2 * math.pi * frequency * inductance
+
+
+def db(value1, value2):
+    if value1 <= 0 or value2 <= 0:
+        raise ValueError("db inputs must be positive")
+    return 20 * math.log10(value1 / value2)
+
+
+def db10(value1, value2):
+    if value1 <= 0 or value2 <= 0:
+        raise ValueError("db10 inputs must be positive")
+    return 10 * math.log10(value1 / value2)
+
+
+def fc_rc(resistance, capacitance):
+    if resistance <= 0 or capacitance <= 0:
+        raise ValueError("resistance and capacitance must be positive")
+    return 1 / (2 * math.pi * resistance * capacitance)
+
+
+def tau(resistance, capacitance):
+    if resistance <= 0 or capacitance <= 0:
+        raise ValueError("resistance and capacitance must be positive")
+    return resistance * capacitance
+
+
+def rc_charge(vin, time, resistance, capacitance):
+    if time < 0:
+        raise ValueError("time must be non-negative")
+    tau_val = tau(resistance, capacitance)
+    return vin * (1 - math.exp(-time / tau_val))
+
+
+def rc_discharge(v0, time, resistance, capacitance):
+    if time < 0:
+        raise ValueError("time must be non-negative")
+    tau_val = tau(resistance, capacitance)
+    return v0 * math.exp(-time / tau_val)
+
+
+def ledr(vsupply, vforward, current):
+    if current <= 0:
+        raise ValueError("current must be positive")
+    return (vsupply - vforward) / current
+
+
+def adc(vin, vref, bits):
+    bit_depth = math.floor(bits)
+    if vref <= 0:
+        raise ValueError("vref must be positive")
+    if bit_depth <= 0:
+        raise ValueError("bits must be positive")
+    full_scale = (1 << bit_depth) - 1
+    normalized = min(max(vin / vref, 0), 1)
+    return round(normalized * full_scale)
+
+
+def dac(code, vref, bits):
+    bit_depth = math.floor(bits)
+    if vref <= 0:
+        raise ValueError("vref must be positive")
+    if bit_depth <= 0:
+        raise ValueError("bits must be positive")
+    full_scale = (1 << bit_depth) - 1
+    clamped_code = min(max(code, 0), full_scale)
+    return (clamped_code / full_scale) * vref
+
+
 def pdf(std_dev):
     return math.exp(-0.5 * std_dev**2) / math.sqrt(2 * math.pi)
 

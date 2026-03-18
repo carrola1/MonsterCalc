@@ -13,8 +13,9 @@ import re
 import tokenize
 
 import keywords
-from myfuncs import a2h, bin, bitget, bitpunch, cdf, eng_string, findrdiv, findres
-from myfuncs import h2a, hex, mySum, pdf, rpar, vdiv
+from myfuncs import a2h, adc, bin, bitget, bitpunch, cdf, dac, db, db10, eng_string
+from myfuncs import fc_rc, findi, findr, findrdiv, findres, findv, h2a, hex, ledr
+from myfuncs import mySum, pdf, rc_charge, rc_discharge, rpar, tau, vdiv, xc, xl
 
 
 ANS_PREFIXES = ("<<", ">>", "+", "*", "^", "&", "/", "=", "%", "|")
@@ -170,14 +171,22 @@ def build_eval_namespace() -> dict[str, Any]:
         "cdf": cdf,
         "ceil": ceil,
         "cos": cos,
+        "dac": dac,
+        "db": db,
+        "db10": db10,
         "deg": deg,
         "e": e,
         "exp": exp,
+        "fc_rc": fc_rc,
+        "findi": findi,
+        "findr": findr,
         "findrdiv": findrdiv,
         "findres": findres,
+        "findv": findv,
         "floor": floor,
         "h2a": h2a,
         "hex": hex,
+        "ledr": ledr,
         "log": log,
         "log10": log10,
         "log2": log2,
@@ -188,13 +197,19 @@ def build_eval_namespace() -> dict[str, Any]:
         "pi": pi,
         "polar": polar,
         "rad": rad,
+        "rc_charge": rc_charge,
+        "rc_discharge": rc_discharge,
         "rect": rect,
         "rpar": rpar,
         "sin": sin,
         "sqrt": sqrt,
         "sum": mySum,
         "tan": tan,
+        "tau": tau,
         "vdiv": vdiv,
+        "xc": xc,
+        "xl": xl,
+        "adc": adc,
     }
 
 

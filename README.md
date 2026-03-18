@@ -7,7 +7,7 @@ It is built for quick technical work:
 - General math, trig, logs, and complex helpers
 - Variable assignment with `ans` support
 - Unit conversion with `to`
-- Electronics helpers like `findres`, `rpar`, `vdiv`, and `findrdiv`
+- Electronics helpers like `findres`, `rpar`, `vdiv`, `findrdiv`, reactance, RC, dB, LED, and ADC/DAC tools
 - Programming helpers like `bin`, `hex`, `bitget`, `a2h`, and `h2a`
 
 ## Modernized Runtime

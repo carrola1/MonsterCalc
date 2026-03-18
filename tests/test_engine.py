@@ -67,6 +67,45 @@ def test_findrdiv_supports_extreme_ratios_after_fix():
     assert result.display == "[1130.0, 11.5]"
 
 
+def test_engine_supports_new_ee_helpers():
+    engine = CalculationEngine()
+    results = engine.evaluate_document(
+        "\n".join(
+            [
+                "findv(0.002, 4.7k)",
+                "findi(5, 10k)",
+                "findr(5, 0.002)",
+                "xc(1k, 0.1u)",
+                "xl(1k, 10m)",
+                "db(2, 1)",
+                "db10(10, 1)",
+                "fc_rc(10k, 0.1u)",
+                "tau(10k, 0.1u)",
+                "rc_charge(5, 1m, 1k, 1u)",
+                "rc_discharge(5, 1m, 1k, 1u)",
+                "ledr(5, 2, 20m)",
+                "adc(1.65, 3.3, 10)",
+                "dac(512, 3.3, 10)",
+            ]
+        )
+    )
+
+    assert results[0].display == "9.4"
+    assert results[1].display == "500u"
+    assert results[2].display == "2.5k"
+    assert results[3].display == "1.5915k"
+    assert results[4].display == "62.832"
+    assert results[5].display == "6.0206"
+    assert results[6].display == "10"
+    assert results[7].display == "159.15"
+    assert results[8].display == "1m"
+    assert results[9].display == "3.1606"
+    assert results[10].display == "1.8394"
+    assert results[11].display == "150"
+    assert results[12].display == "512"
+    assert results[13].display == "1.6516"
+
+
 def test_convert_units_expression_rewrites_supported_units():
     expression, unit = convert_units_expression("50 mm to in")
 

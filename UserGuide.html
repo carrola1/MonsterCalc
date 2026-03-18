@@ -347,6 +347,13 @@ line1 + line2</pre>
           <tr><td><code>vdiv(vin, R1, R2)</code></td><td>Voltage divider output.</td><td><code>vdiv(5, 10k, 10k)</code></td></tr>
           <tr><td><code>rpar(R1, R2, ...)</code></td><td>Parallel resistance.</td><td><code>rpar(10k, 10k)</code></td></tr>
           <tr><td><code>findrdiv(vin, vout, tol)</code></td><td>Best standard resistor pair for a divider.</td><td><code>findrdiv(5, 3.3, 1)</code></td></tr>
+          <tr><td><code>findv(i, r)</code>, <code>findi(v, r)</code>, <code>findr(v, i)</code></td><td>Ohm's law helpers.</td><td><code>findi(5, 10k)</code></td></tr>
+          <tr><td><code>xc(f, c)</code>, <code>xl(f, l)</code></td><td>Capacitive and inductive reactance.</td><td><code>xc(1k, 0.1u)</code></td></tr>
+          <tr><td><code>db(v1, v2)</code>, <code>db10(p1, p2)</code></td><td>Voltage-ratio and power-ratio decibel helpers.</td><td><code>db(2, 1)</code></td></tr>
+          <tr><td><code>fc_rc(r, c)</code>, <code>tau(r, c)</code></td><td>RC cutoff frequency and time constant.</td><td><code>fc_rc(10k, 0.1u)</code></td></tr>
+          <tr><td><code>rc_charge(vin, t, r, c)</code>, <code>rc_discharge(v0, t, r, c)</code></td><td>RC transient voltage helpers.</td><td><code>rc_charge(5, 1m, 1k, 1u)</code></td></tr>
+          <tr><td><code>ledr(vs, vf, i)</code></td><td>LED series resistor.</td><td><code>ledr(5, 2, 20m)</code></td></tr>
+          <tr><td><code>adc(vin, vref, bits)</code>, <code>dac(code, vref, bits)</code></td><td>ADC code and DAC output voltage helpers.</td><td><code>adc(1.65, 3.3, 10)</code></td></tr>
         </tbody>
       </table>
     </section>
