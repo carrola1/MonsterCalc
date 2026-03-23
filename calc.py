@@ -45,7 +45,7 @@ TEXT_SECONDARY = "#c8ccd1"
 TEXT_MUTED = "#77808a"
 RESULT_CLICK_MAX_SECONDS = 0.35
 RESULT_CLICK_MAX_DISTANCE = 6
-AUTOSPACED_TOKENS = {"+", "-", "*", "/", "%", "<<", ">>", "&", "|", "^", "**", "=", "to"}
+AUTOSPACED_TOKENS = {"+", "-", "*", "/", "<<", ">>", "&", "|", "^", "**", "=", "to"}
 
 TOKEN_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)$")
 TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")

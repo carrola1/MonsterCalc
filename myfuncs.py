@@ -48,6 +48,10 @@ def mySum(*args):
     return total
 
 
+def mod(value, divisor):
+    return math.floor(value) % math.floor(divisor)
+
+
 def bitget(valIn, stopBit, startBit):
     mask = 0
     for ii in range(startBit, stopBit + 1):

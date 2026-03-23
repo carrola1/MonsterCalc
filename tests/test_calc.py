@@ -110,6 +110,10 @@ def test_build_token_insert_text_autospaces_binary_operators():
     assert build_token_insert_text("2+3", 1, "+") == " + "
 
 
+def test_build_token_insert_text_leaves_percent_compact():
+    assert build_token_insert_text("50", 2, "%") == "%"
+
+
 def test_build_token_insert_text_autospaces_assignment_and_to():
     assert build_token_insert_text("x", 1, "=") == " = "
     assert build_token_insert_text("70 F", 4, "to") == " to "

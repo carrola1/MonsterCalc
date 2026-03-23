@@ -29,6 +29,13 @@ def test_engine_supports_unit_conversions():
     ]
 
 
+def test_engine_treats_percent_as_suffix_and_mod_as_function():
+    engine = CalculationEngine()
+    results = engine.evaluate_document("50%\n200 * 10%\nmod(5, 2)")
+
+    assert [line.display for line in results] == ["500m", "20", "1"]
+
+
 def test_engine_supports_biset_programming_helper():
     engine = CalculationEngine()
     results = engine.evaluate_document("biset(0x01, 7, 1)\nbiset(1, 7, 1)")
@@ -48,6 +55,13 @@ def test_engine_preserves_hash_inside_strings_and_ignores_comments():
     results = engine.evaluate_document('a2h("te#st") # inline comment')
 
     assert results[0].display == "b'7465237374'"
+
+
+def test_engine_preserves_percent_inside_strings():
+    engine = CalculationEngine()
+    results = engine.evaluate_document('a2h("50%")')
+
+    assert results[0].display == "b'353025'"
 
 
 def test_engine_keeps_blank_result_for_invalid_lines():

@@ -133,5 +133,6 @@ That installs:
 ## Notes
 
 - The app keeps the original two-pane scratchpad workflow and menu structure.
+- `%` is treated as a percent suffix. Use `mod(x, y)` for modulus.
 - Project metadata now lives in `pyproject.toml`.
 - Legacy build artifacts are still in the repository for reference, but the recommended development path is the editable install above.

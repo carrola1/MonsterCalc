@@ -15,10 +15,10 @@ import tokenize
 import keywords
 from myfuncs import a2h, adc, bin, biset, bitget, bitpunch, bitset, cdf, dac, db, db10, eng_string
 from myfuncs import fc_rc, findi, findr, findrdiv, findres, findv, h2a, hex, ledr
-from myfuncs import mySum, pdf, rc_charge, rc_discharge, rpar, tau, vdiv, xc, xl
+from myfuncs import mod, mySum, pdf, rc_charge, rc_discharge, rpar, tau, vdiv, xc, xl
 
 
-ANS_PREFIXES = ("<<", ">>", "+", "*", "^", "&", "/", "=", "%", "|")
+ANS_PREFIXES = ("<<", ">>", "+", "*", "^", "&", "/", "=", "|")
 ASSIGNMENT_RE = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\s*=\s*(?P<expr>.+?)\s*$")
 CONVERSION_RE = re.compile(r"\s+to\s+")
 SI_SUFFIX_PATTERNS = (
@@ -194,6 +194,7 @@ def build_eval_namespace() -> dict[str, Any]:
         "log2": log2,
         "max": max,
         "min": min,
+        "mod": mod,
         "pdf": pdf,
         "phase": phase,
         "pi": pi,
@@ -261,10 +262,63 @@ def prepare_expression(expression: str, *, conv_xor_to_exp: bool, ans: Any) -> s
     for pattern, replacement in SI_SUFFIX_PATTERNS:
         prepared = pattern.sub(replacement, prepared)
 
+    prepared = rewrite_percent_suffixes(prepared)
+
     if conv_xor_to_exp:
         prepared = prepared.replace("^", "**")
 
     return prepared
+
+
+def rewrite_percent_suffixes(expression: str) -> str:
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(expression).readline))
+    except tokenize.TokenError:
+        return expression
+
+    ignored_types = {
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENDMARKER,
+    }
+    meaningful_indices = [
+        index
+        for index, token_info in enumerate(tokens)
+        if token_info.type not in ignored_types
+    ]
+
+    rewritten: list[tuple[int, str]] = []
+    for position, token_index in enumerate(meaningful_indices):
+        token_info = tokens[token_index]
+        if token_info.type == tokenize.OP and token_info.string == "%":
+            previous = tokens[meaningful_indices[position - 1]] if position > 0 else None
+            following = (
+                tokens[meaningful_indices[position + 1]]
+                if position + 1 < len(meaningful_indices)
+                else None
+            )
+
+            previous_is_value = previous is not None and (
+                previous.type in (tokenize.NUMBER, tokenize.NAME, tokenize.STRING)
+                or previous.string == ")"
+            )
+            following_is_postfix_compatible = following is None or (
+                following.type == tokenize.OP
+                and following.string in {"+", "-", "*", "/", "^", "&", "|", ",", ")", "<<", ">>", "="}
+            ) or (
+                following.type == tokenize.NAME and following.string == "to"
+            )
+
+            if previous_is_value and following_is_postfix_compatible:
+                rewritten.append((token_info.type, "/100"))
+                continue
+            raise ValueError("Use % as a percent suffix and mod(x, y) for modulus")
+
+        rewritten.append((token_info.type, token_info.string))
+
+    return tokenize.untokenize(rewritten)
 
 
 def convert_units_expression(line: str) -> tuple[str, str]:
