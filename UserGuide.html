@@ -333,7 +333,7 @@ line1 + line2</pre>
           <tr><td><code>hex(value[, width])</code></td><td>Convert to hex string.</td><td><code>hex(255)</code></td></tr>
           <tr><td><code>bin(value[, width])</code></td><td>Convert to binary string.</td><td><code>bin(5, 8)</code></td></tr>
           <tr><td><code>bitget(value, msb, lsb)</code></td><td>Extract a bit field.</td><td><code>bitget(0xA, 1, 0)</code></td></tr>
-          <tr><td><code>bitpunch(value, bit, state)</code></td><td>Set or clear one bit. Output follows the input base.</td><td><code>bitpunch(0x01, 7, 1)</code></td></tr>
+          <tr><td><code>biset(value, bit, state)</code></td><td>Set or clear one bit. Output follows the input base.</td><td><code>biset(0x01, 7, 1)</code></td></tr>
           <tr><td><code>a2h(text)</code></td><td>ASCII string to hex bytes.</td><td><code>a2h("test")</code></td></tr>
           <tr><td><code>h2a(hex_value)</code></td><td>Hex value to ASCII bytes.</td><td><code>h2a(0x74657374)</code></td></tr>
         </tbody>
@@ -389,7 +389,7 @@ line1 + line2</pre>
 y = 10k
 vdiv(5, y, y)
 line1 * 2
-bitpunch(0x01, 7, 1)</pre>
+biset(0x01, 7, 1)</pre>
     </section>
   </div>
 </body>

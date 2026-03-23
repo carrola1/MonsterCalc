@@ -45,6 +45,7 @@ TEXT_SECONDARY = "#c8ccd1"
 TEXT_MUTED = "#77808a"
 RESULT_CLICK_MAX_SECONDS = 0.35
 RESULT_CLICK_MAX_DISTANCE = 6
+AUTOSPACED_TOKENS = {"+", "-", "*", "/", "%", "<<", ">>", "&", "|", "^", "**", "=", "to"}
 
 TOKEN_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)$")
 TOKEN_CONTINUATION_RE = re.compile(r"^[A-Za-z0-9_]")
@@ -71,6 +72,26 @@ def scale_scroll_value(
 
 def should_reserve_horizontal_scrollbar_space(*maximums: int) -> bool:
     return any(maximum > 0 for maximum in maximums)
+
+
+def build_token_insert_text(
+    line_text: str,
+    cursor_column: int,
+    token: str,
+    *,
+    trailing_parenthesis: bool = False,
+) -> str:
+    if trailing_parenthesis:
+        return f"{token}("
+
+    if token not in AUTOSPACED_TOKENS:
+        return token
+
+    before_char = line_text[cursor_column - 1] if cursor_column > 0 else ""
+    after_char = line_text[cursor_column] if cursor_column < len(line_text) else ""
+    leading_space = " " if before_char and not before_char.isspace() else ""
+    trailing_space = " " if after_char == "" or not after_char.isspace() else ""
+    return f"{leading_space}{token}{trailing_space}"
 
 
 def token_at_column(line_text: str, column: int) -> str | None:
@@ -706,6 +727,15 @@ class MainWidget(QWidget):
         self.engine.config.conv_xor_to_exp = bool(value)
         self.updateResults()
 
+    @property
+    def editorFontSize(self) -> int:
+        return self.textEdit.font().pointSize()
+
+    @editorFontSize.setter
+    def editorFontSize(self, value: int) -> None:
+        clamped = max(16, min(20, int(value)))
+        self._apply_editor_font_size(clamped)
+
     def initUI(self) -> None:
         self._configure_editors()
         self._configure_header()
@@ -926,6 +956,19 @@ class MainWidget(QWidget):
         self.resDisp.setStyleSheet(
             f"background-color: {RESULTS_BG}; color: {TEXT_SECONDARY};"
         )
+        self._apply_editor_font_size(16)
+
+    def _apply_editor_font_size(self, point_size: int) -> None:
+        editor_font = QFont(self.textEdit.font())
+        editor_font.setPointSize(point_size)
+        self.textEdit.setFont(editor_font)
+        self.textEdit.completionLabel.setFont(editor_font)
+        self.textEdit.updateLineNumberAreaWidth(0)
+        self.textEdit.lineNumberArea.update()
+
+        result_font = QFont(self.resDisp.font())
+        result_font.setPointSize(point_size)
+        self.resDisp.setFont(result_font)
 
     def _configure_header(self) -> None:
         icon = self._scaled_icon_pixmap(40)
@@ -1120,7 +1163,14 @@ class MainWidget(QWidget):
     def _insert_token(self, action_text: str, trailing_parenthesis: bool = False) -> None:
         sender = self.sender()
         token = sender.data() if sender is not None and hasattr(sender, "data") else action_text.split(":", maxsplit=1)[0]
-        self.textEdit.insertPlainText(f"{token}(" if trailing_parenthesis else token)
+        cursor = self.textEdit.textCursor()
+        insert_text = build_token_insert_text(
+            cursor.block().text(),
+            cursor.positionInBlock(),
+            token,
+            trailing_parenthesis=trailing_parenthesis,
+        )
+        self.textEdit.insertPlainText(insert_text)
         self.textEdit.setFocus()
 
     def clear(self) -> None:

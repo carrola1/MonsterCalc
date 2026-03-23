@@ -56,7 +56,7 @@ def bitget(valIn, stopBit, startBit):
     return bin(bitsRtn)
 
 
-def bitpunch(valIn, bitNum, bitVal):
+def biset(valIn, bitNum, bitVal):
     value = math.floor(valIn)
     bit_index = math.floor(bitNum)
     bit_state = math.floor(bitVal)
@@ -72,6 +72,11 @@ def bitpunch(valIn, bitNum, bitVal):
         punched = value & ~(1 << bit_index)
 
     return punched
+
+
+# Backward-compatible alias for older sheets.
+bitset = biset
+bitpunch = biset
 
 
 def a2h(dataIn):

@@ -29,9 +29,16 @@ def test_engine_supports_unit_conversions():
     ]
 
 
-def test_engine_supports_bitpunch_programming_helper():
+def test_engine_supports_biset_programming_helper():
     engine = CalculationEngine()
-    results = engine.evaluate_document("bitpunch(0x01, 7, 1)\nbitpunch(1, 7, 1)")
+    results = engine.evaluate_document("biset(0x01, 7, 1)\nbiset(1, 7, 1)")
+
+    assert [line.display for line in results] == ["0x81", "129"]
+
+
+def test_engine_supports_bitset_programming_alias():
+    engine = CalculationEngine()
+    results = engine.evaluate_document("bitset(0x01, 7, 1)\nbitset(1, 7, 1)")
 
     assert [line.display for line in results] == ["0x81", "129"]
 

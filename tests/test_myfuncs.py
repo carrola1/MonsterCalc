@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from myfuncs import adc, bitpunch, cdf, dac, db, db10, eng_string, fc_rc, findi
+from myfuncs import adc, biset, cdf, dac, db, db10, eng_string, fc_rc, findi
 from myfuncs import findr, findres, findv, ledr, pdf, rc_charge, rc_discharge
 from myfuncs import tau, xc, xl
 
@@ -20,9 +20,9 @@ def test_eng_string_formats_supported_modes():
     assert eng_string(10000, 5, resFormat="si") == "10k"
 
 
-def test_bitpunch_sets_and_clears_bits():
-    assert bitpunch(0x01, 7, 1) == 0x81
-    assert bitpunch(0x81, 7, 0) == 0x01
+def test_biset_sets_and_clears_bits():
+    assert biset(0x01, 7, 1) == 0x81
+    assert biset(0x81, 7, 0) == 0x01
 
 
 def test_ee_helpers_cover_new_desktop_port():

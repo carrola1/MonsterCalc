@@ -13,7 +13,7 @@ import re
 import tokenize
 
 import keywords
-from myfuncs import a2h, adc, bin, bitget, bitpunch, cdf, dac, db, db10, eng_string
+from myfuncs import a2h, adc, bin, biset, bitget, bitpunch, bitset, cdf, dac, db, db10, eng_string
 from myfuncs import fc_rc, findi, findr, findrdiv, findres, findv, h2a, hex, ledr
 from myfuncs import mySum, pdf, rc_charge, rc_discharge, rpar, tau, vdiv, xc, xl
 
@@ -150,9 +150,9 @@ class CalculationEngine:
     def _format_result(self, value: Any, expression: str = "") -> str:
         if value is None or callable(value):
             return ""
-        bitpunch_base = bitpunch_display_base(expression)
-        if bitpunch_base is not None:
-            return builtins.hex(value) if bitpunch_base == "hex" else str(value)
+        biset_base = biset_display_base(expression)
+        if biset_base is not None:
+            return builtins.hex(value) if biset_base == "hex" else str(value)
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             return eng_string(value, self.config.sig_figs, "%s", self.config.res_format)
         return str(value)
@@ -166,8 +166,10 @@ def build_eval_namespace() -> dict[str, Any]:
         "asin": asin,
         "atan": atan,
         "bin": bin,
+        "biset": biset,
         "bitget": bitget,
         "bitpunch": bitpunch,
+        "bitset": bitset,
         "cdf": cdf,
         "ceil": ceil,
         "cos": cos,
@@ -213,8 +215,12 @@ def build_eval_namespace() -> dict[str, Any]:
     }
 
 
-def bitpunch_display_base(expression: str) -> str | None:
-    first_arg = top_level_call_first_arg(expression, "bitpunch")
+def biset_display_base(expression: str) -> str | None:
+    first_arg = None
+    for function_name in ("biset", "bitset", "bitpunch"):
+        first_arg = top_level_call_first_arg(expression, function_name)
+        if first_arg is not None:
+            break
     if first_arg is None:
         return None
 

@@ -329,6 +329,9 @@ class MainWindow(QMainWindow):
         self.sigFigAction = QAction("Significant Figures…", self)
         self.sigFigAction.triggered.connect(self.setSigFigs)
 
+        self.fontSizeAction = QAction("Font Size…", self)
+        self.fontSizeAction.triggered.connect(self.setFontSize)
+
         self.resultFormatGroup = QActionGroup(self)
         self.resultFormatGroup.setExclusive(True)
         self.sciFormatAction = QAction("Scientific (1.0e4)", self, checkable=True)
@@ -379,6 +382,7 @@ class MainWindow(QMainWindow):
 
         settingsMenu = menubar.addMenu("&Settings")
         settingsMenu.addAction(self.sigFigAction)
+        settingsMenu.addAction(self.fontSizeAction)
         resultFormatMenu = settingsMenu.addMenu("Results Format")
         resultFormatMenu.addAction(self.sciFormatAction)
         resultFormatMenu.addAction(self.engFormatAction)
@@ -396,6 +400,10 @@ class MainWindow(QMainWindow):
         sig_figs = self._setting_value("sig_figs")
         if sig_figs is not None:
             self.editor.sigFigs = _coerce_int(sig_figs, self.editor.sigFigs)
+
+        font_size = self._setting_value("editor_font_size")
+        if font_size is not None:
+            self.editor.editorFontSize = _coerce_int(font_size, self.editor.editorFontSize)
 
         result_format = self._setting_value("res_format")
         if result_format in {"scientific", "engineering", "si"}:
@@ -557,6 +565,19 @@ class MainWindow(QMainWindow):
             self.editor.sigFigs = value
             self.saveSettings()
 
+    def setFontSize(self) -> None:
+        value, ok = QInputDialog.getInt(
+            self,
+            "Font Size",
+            "Set the editor font size:",
+            self.editor.editorFontSize,
+            16,
+            20,
+        )
+        if ok:
+            self.editor.editorFontSize = value
+            self.saveSettings()
+
     def setConvXorToExp(self) -> None:
         self.editor.convXorToExp = self.convXorToExpAction.isChecked()
         self.saveSettings()
@@ -568,6 +589,7 @@ class MainWindow(QMainWindow):
 
     def saveSettings(self) -> None:
         self.settings.setValue("sig_figs", self.editor.sigFigs)
+        self.settings.setValue("editor_font_size", self.editor.editorFontSize)
         self.settings.setValue("res_format", self.editor.resFormat)
         self.settings.setValue("conv_xor_to_exp", self.editor.convXorToExp)
         self.settings.setValue("welcome_on_startup", self.welcome_on_startup)

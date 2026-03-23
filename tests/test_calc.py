@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from calc import (
+    build_token_insert_text,
     build_clickable_result_lines,
     build_hover_previews,
     build_result_hover_previews,
@@ -24,6 +25,15 @@ def test_find_inline_completion_requires_unique_match():
     assert completion.token == "bitget"
     assert completion.ghost_text == "et(value, msb, lsb)"
     assert completion.insert_text == "et"
+
+
+def test_find_inline_completion_supports_bitset_alias():
+    completion = find_inline_completion("bitse", 5, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "bitset"
+    assert completion.ghost_text == "t(value, bit, state)"
+    assert completion.insert_text == "t"
 
 
 def test_find_inline_completion_shows_signature_for_exact_function_name():
@@ -73,7 +83,7 @@ def test_find_inline_completion_skips_current_argument_once_typing_starts():
 
 def test_find_inline_completion_ignores_short_or_ambiguous_fragments():
     assert find_inline_completion("bi", 2, TOKEN_SIGNATURES) is None
-    assert find_inline_completion("bit", 3, TOKEN_SIGNATURES) is None
+    assert find_inline_completion("find", 4, TOKEN_SIGNATURES) is None
     assert find_inline_completion("log", 3, TOKEN_SIGNATURES) is None
 
 
@@ -92,6 +102,22 @@ def test_closing_paren_suffix_span_detects_single_closer_suffix():
     assert closing_paren_suffix_span("bin(5)", 5) == 1
     assert closing_paren_suffix_span("bin(5   )", 5) == 4
     assert closing_paren_suffix_span("bin(5) + 1", 5) is None
+
+
+def test_build_token_insert_text_autospaces_binary_operators():
+    assert build_token_insert_text("2", 1, "+") == " + "
+    assert build_token_insert_text("2 ", 2, "+") == "+ "
+    assert build_token_insert_text("2+3", 1, "+") == " + "
+
+
+def test_build_token_insert_text_autospaces_assignment_and_to():
+    assert build_token_insert_text("x", 1, "=") == " = "
+    assert build_token_insert_text("70 F", 4, "to") == " to "
+
+
+def test_build_token_insert_text_leaves_functions_and_units_compact():
+    assert build_token_insert_text("", 0, "mm") == "mm"
+    assert build_token_insert_text("", 0, "vdiv", trailing_parenthesis=True) == "vdiv("
 
 
 def test_should_consume_existing_closing_paren_only_when_cursor_is_on_closer():

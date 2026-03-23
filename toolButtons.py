@@ -54,7 +54,7 @@ EE_SECTIONS = [
             ("hex", "Convert to hex"),
             ("bin", "Convert to bin"),
             ("bitget", "Bit slice (value, msb, lsb)"),
-            ("bitpunch", "Set/clear bit (value, bit, state)"),
+            ("biset", "Set/clear bit (value, bit, state)"),
             ("a2h", "Convert ASCII 'str' to hex"),
             ("h2a", "Convert hex to ASCII"),
         ],
@@ -290,7 +290,8 @@ TOKEN_SIGNATURES = {
     "hex": "(value)",
     "bin": "(value)",
     "bitget": "(value, msb, lsb)",
-    "bitpunch": "(value, bit, state)",
+    "biset": "(value, bit, state)",
+    "bitset": "(value, bit, state)",
     "a2h": "(text)",
     "h2a": "(hex_text)",
 }

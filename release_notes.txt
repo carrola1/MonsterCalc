@@ -6,7 +6,7 @@ v2.0 Mar 2026
     - [Feature]: Added lighter helper hints for built-in functions in the results pane
     - [Feature]: Added result hover previews for integer values with default, decimal, hex, and binary views
     - [Feature]: Added editor line numbers with clickable line references and new lineX result lookup support
-    - [Feature]: Added bitpunch() helper for setting or clearing individual bits
+    - [Feature]: Added biset() helper for setting or clearing individual bits
     - [Feature]: Added Help -> User Guide with full local HTML documentation
     - [Bug Fix]: Fixed live-edit crashes on incomplete expressions such as abs(
     - [Bug Fix]: Ctrl+C now copies correctly from the results pane
