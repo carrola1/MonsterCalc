@@ -29,17 +29,20 @@ class KeywordHighlighter(QSyntaxHighlighter):
         }
 
         base_rules = []
-        base_rules += [(rf"\b{re.escape(word)}\b", self.styles["funcs"]) for word in self.funcs]
-        base_rules += [(pattern, self.styles["operators"]) for pattern in self.operators]
-        base_rules += [(rf"\b{re.escape(symbol)}\b", self.styles["symbols"]) for symbol in self.syms]
-        base_rules += [(rf"(\d)({re.escape(symbol)}\b)", self.styles["symbols"]) for symbol in self.suffix]
-        base_rules += [(rf"\b{re.escape(prefix)}", self.styles["symbols"]) for prefix in self.prefix]
-        base_rules += [(rf"(?<=\d){re.escape(token)}(?=[+-]?\d)", self.styles["symbols"]) for token in self.tweener]
-        base_rules += [(rf"\b{re.escape(unit)}\b", self.styles["units"]) for unit in self.units]
-        base_rules += [(rf"\b{re.escape(token)}\b", self.styles["operators"]) for token in self.unusual_syms]
-        base_rules += [(r"#.*", self.styles["comments"])]
+        base_rules += [(rf"\b{re.escape(word)}\b", self.styles["funcs"], 0) for word in self.funcs]
+        base_rules += [(pattern, self.styles["operators"], 0) for pattern in self.operators]
+        base_rules += [(rf"\b{re.escape(symbol)}\b", self.styles["symbols"], 0) for symbol in self.syms]
+        base_rules += [(rf"(\d)({re.escape(symbol)}\b)", self.styles["symbols"], 2) for symbol in self.suffix]
+        base_rules += [(rf"\b{re.escape(prefix)}", self.styles["symbols"], 0) for prefix in self.prefix]
+        base_rules += [(rf"(?<=\d){re.escape(token)}(?=[+-]?\d)", self.styles["symbols"], 0) for token in self.tweener]
+        base_rules += [(rf"\b{re.escape(unit)}\b", self.styles["units"], 0) for unit in self.units]
+        base_rules += [(rf"\b{re.escape(token)}\b", self.styles["operators"], 0) for token in self.unusual_syms]
+        base_rules += [(r"#.*", self.styles["comments"], 0)]
 
-        self.base_rules = [(QRegularExpression(pattern), text_format) for pattern, text_format in base_rules]
+        self.base_rules = [
+            (QRegularExpression(pattern), text_format, capture_group)
+            for pattern, text_format, capture_group in base_rules
+        ]
 
     def style_format(self, color: str, style: str = "") -> QTextCharFormat:
         text_format = QTextCharFormat()
@@ -63,7 +66,16 @@ class KeywordHighlighter(QSyntaxHighlighter):
 
         rules.append((QRegularExpression(r"\bline\d+\b"), self.styles["userSyms"]))
 
-        for expression, text_format in rules:
+        for expression, text_format, capture_group in self.base_rules:
+            match_iterator = expression.globalMatch(text)
+            while match_iterator.hasNext():
+                match = match_iterator.next()
+                start = match.capturedStart(capture_group)
+                length = match.capturedLength(capture_group)
+                if start >= 0 and length > 0:
+                    self.setFormat(start, length, text_format)
+
+        for expression, text_format in rules[len(self.base_rules) :]:
             match_iterator = expression.globalMatch(text)
             while match_iterator.hasNext():
                 match = match_iterator.next()
