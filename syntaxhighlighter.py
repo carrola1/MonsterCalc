@@ -34,7 +34,7 @@ class KeywordHighlighter(QSyntaxHighlighter):
         base_rules += [(rf"\b{re.escape(symbol)}\b", self.styles["symbols"]) for symbol in self.syms]
         base_rules += [(rf"(\d)({re.escape(symbol)}\b)", self.styles["symbols"]) for symbol in self.suffix]
         base_rules += [(rf"\b{re.escape(prefix)}", self.styles["symbols"]) for prefix in self.prefix]
-        base_rules += [(rf"(\d)({re.escape(token)})", self.styles["symbols"]) for token in self.tweener]
+        base_rules += [(rf"(?<=\d){re.escape(token)}(?=[+-]?\d)", self.styles["symbols"]) for token in self.tweener]
         base_rules += [(rf"\b{re.escape(unit)}\b", self.styles["units"]) for unit in self.units]
         base_rules += [(rf"\b{re.escape(token)}\b", self.styles["operators"]) for token in self.unusual_syms]
         base_rules += [(r"#.*", self.styles["comments"])]

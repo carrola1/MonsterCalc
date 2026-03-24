@@ -51,6 +51,6 @@ operators = [r'\+', '-', r'\*', '<<', '>>', r'\^', r'\&', '/', '=',
              '%', r'\|']
 prefix = ['0x', '0b']
 suffix = ['p', 'n', 'u', 'm', 'k', 'M', 'G']
-tweener = ['e']
+tweener = ['e', 'E']
 symbols = ['ans', 'pi', 'e']
 unusual_syms = ['to']
