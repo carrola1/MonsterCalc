@@ -25,7 +25,7 @@ class KeywordHighlighter(QSyntaxHighlighter):
             "userSyms": self.style_format("#ff9f68", "bold"),
             "symbols": self.style_format("#ff6b8a"),
             "comments": self.style_format("#9099a4", "italic"),
-            "units": self.style_format("#9be564", "bold"),
+            "units": self.style_format("#e56464", "bold"),
         }
 
         base_rules = []

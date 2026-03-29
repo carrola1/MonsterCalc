@@ -30,8 +30,8 @@ TITLE_FONT_FAMILIES = [
     "Times New Roman",
 ]
 
-ACCENT_RED = "#ab2424"
-ACCENT_RED_BRIGHT = "#bb2d2d"
+ACCENT_RED = "#e05252"
+ACCENT_RED_BRIGHT = "#e85c5c"
 WINDOW_BG = "#26292b"
 PANEL_BG = "#26292b"
 EDITOR_BG = "#1a1b1d"
@@ -898,7 +898,7 @@ class MainWidget(QWidget):
             }
 
             QMenu::item:selected {
-                background-color: #381b1b;
+                background-color: #3d2020;
                 color: #f7f7f7;
             }
 
