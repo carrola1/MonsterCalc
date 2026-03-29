@@ -1,3 +1,17 @@
+v2.0 Mar 2026
+    - [General]: Modernized PySide6 UI refresh across macOS, Linux, and Windows
+    - [General]: Refreshed dark UI styling, compact toolbar layout, and updated header artwork treatment
+    - [Feature]: Added automated tests for engine logic and UI smoke coverage
+    - [Feature]: Added inline autocomplete and live function argument hints
+    - [Feature]: Added lighter helper hints for built-in functions in the results pane
+    - [Feature]: Added result hover previews for integer values with default, decimal, hex, and binary views
+    - [Feature]: Added editor line numbers with clickable line references and new lineX result lookup support
+    - [Feature]: Added biset() helper for setting or clearing individual bits
+    - [Feature]: Added Help -> User Guide with full local HTML documentation
+    - [Bug Fix]: Fixed live-edit crashes on incomplete expressions such as abs(
+    - [Bug Fix]: Ctrl+C now copies correctly from the results pane
+    - [Bug Fix]: Corrected resistor-divider search results for higher resistor decades
+
 v1.10 Oct 2023
     - [General] Updates to better support running on Linux
 

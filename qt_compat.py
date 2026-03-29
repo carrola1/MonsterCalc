@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+
+QT_API = ""
+
+try:
+    import PySide6 as _qt_package
+
+    from PySide6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker
+    from PySide6.QtCore import QStandardPaths, Qt, QUrl
+    from PySide6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
+    from PySide6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
+    from PySide6.QtWidgets import QApplication, QCheckBox, QDialog, QDialogButtonBox, QFileDialog
+    from PySide6.QtWidgets import QGridLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem
+    from PySide6.QtWidgets import QMainWindow, QMessageBox, QPlainTextEdit, QSplitter, QVBoxLayout
+    from PySide6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
+
+    QT_API = "PySide6"
+    _PLUGIN_ROOT = Path(_qt_package.__file__).resolve().parent / "Qt" / "plugins"
+except ImportError:
+    if getattr(sys, "frozen", False):
+        raise
+
+    import PyQt6 as _qt_package
+
+    from PyQt6.QtCore import QRegularExpression, QRect, QSize, QSettings, QSignalBlocker
+    from PyQt6.QtCore import QStandardPaths, Qt, QUrl
+    from PyQt6.QtGui import QAction, QActionGroup, QColor, QDesktopServices, QFont
+    from PyQt6.QtGui import QIcon, QKeySequence, QPainter, QPixmap, QSyntaxHighlighter, QTextCharFormat
+    from PyQt6.QtWidgets import QApplication, QCheckBox, QDialog, QDialogButtonBox, QFileDialog
+    from PyQt6.QtWidgets import QGridLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem
+    from PyQt6.QtWidgets import QMainWindow, QMessageBox, QPlainTextEdit, QSplitter, QVBoxLayout
+    from PyQt6.QtWidgets import QMenu, QToolButton, QToolTip, QWidget
+
+    QT_API = "PyQt6"
+    _PLUGIN_ROOT = Path(_qt_package.__file__).resolve().parent / "Qt6" / "plugins"
+
+
+def configure_qt_environment(*, offscreen: bool = False) -> None:
+    if QT_API == "PySide6":
+        os.environ.setdefault("QT_PLUGIN_PATH", str(_PLUGIN_ROOT))
+        os.environ.setdefault("QT_QPA_PLATFORM_PLUGIN_PATH", str(_PLUGIN_ROOT / "platforms"))
+    if offscreen:
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+
+configure_qt_environment()

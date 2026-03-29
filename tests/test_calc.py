@@ -1,0 +1,236 @@
+from __future__ import annotations
+
+from calc import (
+    build_token_insert_text,
+    build_clickable_result_lines,
+    build_hover_previews,
+    build_result_hover_previews,
+    closing_paren_suffix_span,
+    find_inline_completion,
+    scale_scroll_value,
+    should_consume_existing_closing_paren,
+    should_insert_line_reference_from_result_click,
+    should_auto_insert_closing_paren,
+    should_reserve_horizontal_scrollbar_space,
+    token_at_column,
+)
+from engine import LineEvaluation
+from toolButtons import TOKEN_SIGNATURES
+
+
+def test_find_inline_completion_requires_unique_match():
+    completion = find_inline_completion("bitg", 4, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "bitget"
+    assert completion.ghost_text == "et(value, msb, lsb)"
+    assert completion.insert_text == "et"
+
+
+def test_find_inline_completion_supports_bitset_alias():
+    completion = find_inline_completion("bitse", 5, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "bitset"
+    assert completion.ghost_text == "t(value, bit, state)"
+    assert completion.insert_text == "t"
+
+
+def test_find_inline_completion_shows_signature_for_exact_function_name():
+    completion = find_inline_completion("bin", 3, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "bin"
+    assert completion.ghost_text == "(value)"
+    assert completion.insert_text == "("
+
+
+def test_find_inline_completion_keeps_hint_after_open_parenthesis():
+    completion = find_inline_completion("bin(", 4, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "bin"
+    assert completion.ghost_text == "value)"
+    assert completion.insert_text == ""
+
+
+def test_find_inline_completion_advances_to_next_empty_argument():
+    completion = find_inline_completion("vdiv(5, ", 8, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "vdiv"
+    assert completion.ghost_text == "R1, R2)"
+    assert completion.insert_text == ""
+
+
+def test_find_inline_completion_stays_visible_while_typing_argument():
+    completion = find_inline_completion("vdiv(5, 10", 10, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "vdiv"
+    assert completion.ghost_text == ", R2)"
+    assert completion.insert_text == ""
+
+
+def test_find_inline_completion_skips_current_argument_once_typing_starts():
+    completion = find_inline_completion("vdiv(5", 6, TOKEN_SIGNATURES)
+
+    assert completion is not None
+    assert completion.token == "vdiv"
+    assert completion.ghost_text == ", R1, R2)"
+    assert completion.insert_text == ""
+
+
+def test_find_inline_completion_ignores_short_or_ambiguous_fragments():
+    assert find_inline_completion("bi", 2, TOKEN_SIGNATURES) is None
+    assert find_inline_completion("find", 4, TOKEN_SIGNATURES) is None
+    assert find_inline_completion("log", 3, TOKEN_SIGNATURES) is None
+
+
+def test_should_auto_insert_closing_paren_for_fixed_arity_final_argument():
+    assert should_auto_insert_closing_paren("bin(5", 5, TOKEN_SIGNATURES) is True
+    assert should_auto_insert_closing_paren("findi(5, 10", 11, TOKEN_SIGNATURES) is True
+
+
+def test_should_auto_insert_closing_paren_skips_non_final_or_existing_closer():
+    assert should_auto_insert_closing_paren("vdiv(5, 10", 10, TOKEN_SIGNATURES) is False
+    assert should_auto_insert_closing_paren("bin(5)", 5, TOKEN_SIGNATURES) is False
+    assert should_auto_insert_closing_paren("min(1", 5, TOKEN_SIGNATURES) is False
+
+
+def test_closing_paren_suffix_span_detects_single_closer_suffix():
+    assert closing_paren_suffix_span("bin(5)", 5) == 1
+    assert closing_paren_suffix_span("bin(5   )", 5) == 4
+    assert closing_paren_suffix_span("bin(5) + 1", 5) is None
+
+
+def test_build_token_insert_text_autospaces_binary_operators():
+    assert build_token_insert_text("2", 1, "+") == " + "
+    assert build_token_insert_text("2 ", 2, "+") == "+ "
+    assert build_token_insert_text("2+3", 1, "+") == " + "
+
+
+def test_build_token_insert_text_leaves_percent_compact():
+    assert build_token_insert_text("50", 2, "%") == "%"
+
+
+def test_build_token_insert_text_autospaces_assignment_and_to():
+    assert build_token_insert_text("x", 1, "=") == " = "
+    assert build_token_insert_text("70 F", 4, "to") == " to "
+
+
+def test_build_token_insert_text_leaves_functions_and_units_compact():
+    assert build_token_insert_text("", 0, "mm") == "mm"
+    assert build_token_insert_text("", 0, "vdiv", trailing_parenthesis=True) == "vdiv("
+
+
+def test_should_consume_existing_closing_paren_only_when_cursor_is_on_closer():
+    assert should_consume_existing_closing_paren("bin(5)", 5) is True
+    assert should_consume_existing_closing_paren("bin(5)", 4) is False
+    assert should_consume_existing_closing_paren("bin(5) + 1", 5) is True
+    assert should_consume_existing_closing_paren("bin(5", 5) is False
+
+
+def test_token_at_column_finds_variable_and_line_refs():
+    assert token_at_column("line12 + total", 2) == "line12"
+    assert token_at_column("line12 + total", 10) == "total"
+    assert token_at_column("line12 + total", 7) is None
+
+
+def test_build_hover_previews_uses_display_values():
+    previews = build_hover_previews(
+        [
+            LineEvaluation(source="x = 10", display="10", assignment_name="x"),
+            LineEvaluation(source="20", display="20"),
+        ]
+    )
+
+    assert previews["x"] == "x = 10"
+    assert previews["line1"] == "line1 = 10"
+    assert previews["line2"] == "line2 = 20"
+
+
+def test_build_result_hover_previews_includes_integer_conversions():
+    previews = build_result_hover_previews(
+        [
+            LineEvaluation(source="255", value=255, display="255"),
+            LineEvaluation(source="x = 10k", value=10000, display="10k", assignment_name="x"),
+            LineEvaluation(source="2.5", value=2.5, display="2.5"),
+        ]
+    )
+
+    assert previews[1] == "default: 255\ndec: 255\nhex: 0xff\nbin: 0b11111111"
+    assert previews[2] == "default: 10k\ndec: 10000\nhex: 0x2710\nbin: 0b10011100010000"
+    assert 3 not in previews
+
+
+def test_build_clickable_result_lines_uses_only_visible_results():
+    clickable = build_clickable_result_lines(
+        [
+            LineEvaluation(source="10", display="10"),
+            LineEvaluation(source="# comment", display=""),
+            LineEvaluation(source="x = 5", display="5", assignment_name="x"),
+        ]
+    )
+
+    assert clickable == {1, 3}
+
+
+def test_result_click_inserts_line_reference_only_for_quick_clean_clicks():
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is True
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.6,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=12,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=2,
+        clickable_lines={1, 2},
+        has_selection=True,
+    ) is False
+
+    assert should_insert_line_reference_from_result_click(
+        press_duration_seconds=0.1,
+        move_distance=2,
+        line_number=3,
+        clickable_lines={1, 2},
+        has_selection=False,
+    ) is False
+
+
+def test_scale_scroll_value_clamps_to_target_max_at_bottom():
+    assert scale_scroll_value(0, 103, 103, 0, 97) == 97
+
+
+def test_scale_scroll_value_preserves_matching_positions_when_in_range():
+    assert scale_scroll_value(0, 120, 60, 0, 90) == 60
+
+
+def test_scale_scroll_value_handles_non_scrollable_targets():
+    assert scale_scroll_value(0, 120, 60, 0, 0) == 0
+
+
+def test_should_reserve_horizontal_scrollbar_space_when_either_pane_overflows():
+    assert should_reserve_horizontal_scrollbar_space(0, 10) is True
+    assert should_reserve_horizontal_scrollbar_space(5, 0) is True
+    assert should_reserve_horizontal_scrollbar_space(0, 0) is False

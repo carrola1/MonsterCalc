@@ -1,168 +1,327 @@
-from PySide2.QtWidgets import QToolButton, QAction
-from PySide2.QtGui import QFont
+from __future__ import annotations
+
+import re
+
+from qt_compat import QAction, QMenu, QToolButton
 
 
-titleFont = QFont()
-titleFont.setBold(True)
-titleFont.setPixelSize(16)
+FUNCTION_SECTIONS = [
+    (
+        "General Math",
+        [
+            ("floor", "Round down"),
+            ("ceil", "Round up"),
+            ("min", "Return list min"),
+            ("max", "Return list max"),
+            ("sum", "Return list sum"),
+            ("mod", "Integer remainder"),
+            ("sqrt", "Square root"),
+            ("abs", "Absolute value"),
+            ("log", "Log base e"),
+            ("log10", "Log base 10"),
+            ("log2", "Log base 2"),
+            ("exp", "Exponential (e**x)"),
+            ("phase", "Phase of complex #"),
+            ("rect", "Complex polar to rect (mag, ang)"),
+            ("polar", "Complex rect to polar"),
+        ],
+    ),
+    (
+        "Geometry",
+        [
+            ("sin", "Sine"),
+            ("cos", "Cosine"),
+            ("tan", "Tangent"),
+            ("asin", "Arc-sine"),
+            ("acos", "Arc-cosine"),
+            ("atan", "Arc-tangent"),
+            ("rad", "Convert deg to rad"),
+            ("deg", "Convert rad to deg"),
+        ],
+    ),
+    (
+        "Probability",
+        [
+            ("cdf", "Normal cumulative distribution (std_dev)"),
+            ("pdf", "Normal probability distribution (std_dev)"),
+        ],
+    ),
+]
+
+EE_SECTIONS = [
+    (
+        "Programming",
+        [
+            ("hex", "Convert to hex"),
+            ("bin", "Convert to bin"),
+            ("bitget", "Bit slice (value, msb, lsb)"),
+            ("biset", "Set/clear bit (value, bit, state)"),
+            ("a2h", "Convert ASCII 'str' to hex"),
+            ("h2a", "Convert hex to ASCII"),
+        ],
+    ),
+    (
+        "Divider and Resistors",
+        [
+            ("findres", "Closest std value (target, tol)"),
+            ("vdiv", "Calc voltage divider out (vin, R1, R2)"),
+            ("rpar", "Parallel resistor calc (R1, R2, R3...)"),
+            ("findrdiv", "Best R divider values (vin, vout, tol)"),
+            ("ledr", "LED series resistor (Vs, Vf, I)"),
+        ],
+    ),
+    (
+        "Ohm's Law",
+        [
+            ("findv", "Find voltage (current, resistance)"),
+            ("findi", "Find current (voltage, resistance)"),
+            ("findr", "Find resistance (voltage, current)"),
+        ],
+    ),
+    (
+        "AC",
+        [
+            ("xc", "Capacitive reactance (f, C)"),
+            ("xl", "Inductive reactance (f, L)"),
+        ],
+    ),
+    (
+        "dB",
+        [
+            ("db", "Voltage ratio in dB (v1, v2)"),
+            ("db10", "Power ratio in dB (p1, p2)"),
+        ],
+    ),
+    (
+        "RC",
+        [
+            ("fc_rc", "RC cutoff frequency (R, C)"),
+            ("tau", "RC time constant (R, C)"),
+            ("rc_charge", "RC charge voltage (vin, t, R, C)"),
+            ("rc_discharge", "RC discharge voltage (v0, t, R, C)"),
+        ],
+    ),
+    (
+        "Converters",
+        [
+            ("adc", "ADC code (vin, vref, bits)"),
+            ("dac", "DAC voltage (code, vref, bits)"),
+        ],
+    ),
+]
+
+SYMBOL_SECTIONS = [
+    (
+        "Misc",
+        [
+            ("ans", "Result from previous line"),
+            ("to", "Unit conversion (ex. 5 mm to in)"),
+        ],
+    ),
+    (
+        "Math",
+        [
+            ("**", "Power (ex. 2**3 = 8)"),
+            ("%", "Percent suffix (ex. 50% = 0.5)"),
+            ("e", "Exponent (ex. 5e-3 = 0.005)"),
+        ],
+    ),
+    (
+        "Programming",
+        [
+            ("0x", "Hex (ex. 0x12 = 18)"),
+            ("0b", "Binary (ex. 0b101 = 5)"),
+            ("<<", "Shift left (ex. 2 << 2 = 8)"),
+            (">>", "Shift right (ex. 8 >> 2 = 2)"),
+            ("|", "Bitwise OR (ex. 8 | 1 = 9)"),
+            ("&", "Bitwise AND (ex. 5 & 1 = 1)"),
+            ("^", "Bitwise XOR (ex. 5 ^ 1 = 4)"),
+        ],
+    ),
+    (
+        "Scientific Notation",
+        [
+            ("p", "Pico (ex. 1p = 1e-12)"),
+            ("n", "Nano (ex. 1n = 1e-9)"),
+            ("u", "Micro (ex. 1u = 1e-6)"),
+            ("m", "Milli (ex. 1m = 1e-3)"),
+            ("k", "Kilo (ex. 1k = 1e3)"),
+            ("M", "Mega (ex. 1M = 1e6)"),
+            ("G", "Giga (ex. 1G = 1e9)"),
+        ],
+    ),
+]
+
+UNIT_SECTIONS = [
+    (
+        "Length",
+        [
+            ("mm", "Millimeters"),
+            ("cm", "Centimeters"),
+            ("m", "Meters"),
+            ("km", "Kilometers"),
+            ("mil", "Thousandths of an inch"),
+            ("in", "Inches"),
+        ],
+    ),
+    (
+        "Volume",
+        [
+            ("mL", "Milliliter"),
+            ("L", "Liter"),
+            ("tsp", "Teaspoon"),
+            ("tbl", "Tablespoon"),
+            ("oz", "Fluid ounce"),
+            ("pt", "Pint"),
+            ("qt", "Quart"),
+            ("gal", "Gallon"),
+        ],
+    ),
+    (
+        "Mass",
+        [
+            ("mg", "Milligram"),
+            ("g", "Gram"),
+            ("kg", "Kilogram"),
+            ("oz", "Ounce"),
+            ("lbs", "Pound"),
+        ],
+    ),
+    (
+        "Force",
+        [
+            ("N", "Newton"),
+            ("kN", "Kilonewton"),
+            ("lbf", "Pound force"),
+        ],
+    ),
+    (
+        "Temperature",
+        [
+            ("C", "Degrees Celsius"),
+            ("F", "Degrees Fahrenheit"),
+        ],
+    ),
+    (
+        "Memory",
+        [
+            ("bits", "Bits"),
+            ("bytes", "Bytes"),
+            ("KB", "IEC KiB (1024 bytes)"),
+            ("MB", "IEC MiB"),
+            ("GB", "IEC GiB"),
+            ("TB", "IEC TiB"),
+            ("Kb", "Kilobits (1000 bits)"),
+            ("Mb", "Megabits"),
+            ("Gb", "Gigabits"),
+            ("Tb", "Terabits"),
+        ],
+    ),
+]
 
 
-# Function Tool Button
+def _build_token_hints(
+    section_groups: tuple[list[tuple[str, list[tuple[str, str]]]], ...],
+) -> dict[str, str]:
+    hints: dict[str, str] = {}
+    for sections in section_groups:
+        for _, entries in sections:
+            for token, description in entries:
+                hints.setdefault(token, description)
+    return hints
+
+
+TOKEN_HINTS = _build_token_hints(
+    (FUNCTION_SECTIONS, EE_SECTIONS, SYMBOL_SECTIONS, UNIT_SECTIONS)
+)
+
+
+def _build_result_hints(hints: dict[str, str]) -> dict[str, str]:
+    return {
+        token: re.sub(r"\s*\([^)]*\)", "", description).strip()
+        for token, description in hints.items()
+    }
+
+
+TOKEN_RESULT_HINTS = _build_result_hints(TOKEN_HINTS)
+
+TOKEN_SIGNATURES = {
+    "floor": "(value)",
+    "ceil": "(value)",
+    "min": "(value1, value2, ...)",
+    "max": "(value1, value2, ...)",
+    "sum": "(list)",
+    "mod": "(value, divisor)",
+    "sqrt": "(value)",
+    "abs": "(value)",
+    "log": "(value)",
+    "log10": "(value)",
+    "log2": "(value)",
+    "exp": "(value)",
+    "phase": "(value)",
+    "rect": "(mag, ang)",
+    "polar": "(value)",
+    "sin": "(angle)",
+    "cos": "(angle)",
+    "tan": "(angle)",
+    "asin": "(value)",
+    "acos": "(value)",
+    "atan": "(value)",
+    "rad": "(deg)",
+    "deg": "(rad)",
+    "cdf": "(std_dev)",
+    "pdf": "(std_dev)",
+    "findres": "(target, tol)",
+    "vdiv": "(vin, R1, R2)",
+    "rpar": "(R1, R2, R3...)",
+    "findrdiv": "(vin, vout, tol)",
+    "findv": "(current, resistance)",
+    "findi": "(voltage, resistance)",
+    "findr": "(voltage, current)",
+    "xc": "(freq, cap)",
+    "xl": "(freq, ind)",
+    "db": "(value1, value2)",
+    "db10": "(value1, value2)",
+    "fc_rc": "(R, C)",
+    "tau": "(R, C)",
+    "rc_charge": "(vin, t, R, C)",
+    "rc_discharge": "(v0, t, R, C)",
+    "ledr": "(Vs, Vf, I)",
+    "adc": "(vin, vref, bits)",
+    "dac": "(code, vref, bits)",
+    "hex": "(value)",
+    "bin": "(value)",
+    "bitget": "(value, msb, lsb)",
+    "biset": "(value, bit, state)",
+    "bitset": "(value, bit, state)",
+    "a2h": "(text)",
+    "h2a": "(hex_text)",
+}
+
+
+def _build_menu(tool_button: QToolButton, sections: list[tuple[str, list[tuple[str, str]]]]) -> QMenu:
+    menu = QMenu(tool_button)
+    for section_name, entries in sections:
+        section_menu = menu.addMenu(section_name)
+        for token, description in entries:
+            action = QAction(f"{token}: {description}", section_menu)
+            action.setData(token)
+            action.setToolTip(description)
+            section_menu.addAction(action)
+    return menu
+
+
 def populateFuncButton(funcTool: QToolButton):
-    funcT0 = QAction('GENERAL MATH', funcTool)
-    func0 = QAction('floor:  Round down', funcTool)
-    func1 = QAction('ceil:   Round up', funcTool)
-    func2 = QAction('min:    Return list min', funcTool)
-    func3 = QAction('max:    Return list max', funcTool)
-    func4 = QAction('sum:    Return list sum', funcTool)
-    func5 = QAction('sqrt:   Square root', funcTool)
-    func6 = QAction('abs:    Absolute value', funcTool)
-    func7 = QAction('log:    Log base e', funcTool)
-    func8 = QAction('log10:  Log base 10', funcTool)
-    func9 = QAction('log2:   Log base 2', funcTool)
-    func10 = QAction('exp:    Exponential (e**x)', funcTool)
-    func11 = QAction('phase:  Phase of complex #', funcTool)
-    func12 = QAction('rect:   Complex polar to rect (mag,ang)', funcTool)
-    func13 = QAction('polar:  Complex rect to polar', funcTool)
-    funcT1 = QAction('GEOMETRY', funcTool)
-    func14 = QAction('sin:    Sine', funcTool)
-    func15 = QAction('cos:    Cosine', funcTool)
-    func16 = QAction('tan:    Tangent', funcTool)
-    func17 = QAction('asin:   Arc-Sine', funcTool)
-    func18 = QAction('acos:   Arc-Cosine', funcTool)
-    func19 = QAction('atan:   Arc-Tangent', funcTool)
-    func20 = QAction('rad:    Convert deg to rad', funcTool)
-    func21 = QAction('deg:    Convert rad to deg', funcTool)
-    funcT2 = QAction('PROBABILITY', funcTool)
-    func22 = QAction('cdf:    Normal cumulative distribution (std_dev)', funcTool)
-    func23 = QAction('pdf:    Normal probability distribution (std_dev)', funcTool)
-
-    funcs = [funcT0, func0, func1, func2, func3, func4, func5, func6,
-             func7, func8, func9, func10, func11, func12, func13, funcT1,
-             func14, func15, func16, func17, func18, func19,
-             func20, func21, funcT2, func22, func23]
-
-    funcT0.setFont(titleFont)
-    funcT1.setFont(titleFont)
-    funcT2.setFont(titleFont)
-
-    return funcs
+    return _build_menu(funcTool, FUNCTION_SECTIONS)
 
 
-# EE Tool Button
 def populateEEButton(eeTool: QToolButton):
-    eeT0 = QAction('ELECTRICAL', eeTool)
-    ee0 = QAction('findres: Closest std value (target, tol)', eeTool)
-    ee1 = QAction('vdiv: Calc voltage divider out (vin, R1, R2)', eeTool)
-    ee2 = QAction('rpar: Parallel resistor calc (R1, R2, R3...)', eeTool)
-    ee3 = QAction('findrdiv: Best R divider values (vin, vout, tol)', eeTool)
-    eeT1 = QAction('PROGRAMMING', eeTool)
-    ee4 = QAction('hex:    Convert to hex', eeTool)
-    ee5 = QAction('bin:    Convert to bin', eeTool)
-    ee6 = QAction('bitget: Bit slice (value,msb,lsb)', eeTool)
-    ee7 = QAction('a2h:    Convert ASCII \'str\' to hex', eeTool)
-    ee8 = QAction('h2a:    Convert hex to ASCII', eeTool)
-
-    eeT0.setFont(titleFont)
-    eeT1.setFont(titleFont)
-    ees = [eeT0, ee0, ee1, ee2, ee3, eeT1, ee4, ee5, ee6, ee7, ee8]
-
-    return ees
+    return _build_menu(eeTool, EE_SECTIONS)
 
 
-# Symbol Tool Button
 def populateSymButton(symTool: QToolButton):
-    symT0 = QAction('MISC', symTool)
-    sym0 = QAction('ans:   Result from previous line', symTool)
-    sym1 = QAction('to:    Unit conversion (ex. 5 mm to in)', symTool)
-    symT1 = QAction('MATH', symTool)
-    sym2 = QAction('**:    Power (ex. 2**3 = 8)', symTool)
-    sym3 = QAction('%:     Modulus (ex. 5 % 2 = 1)', symTool)
-    sym4 = QAction('e:     Exponent (ex. 5e-3 = 0.005)', symTool)
-    symT2 = QAction('PROGRAMMING', symTool)
-    sym5 = QAction('0x:    Hex (ex. 0x12 = 18)', symTool)
-    sym6 = QAction('0b:    Binary (ex. 0b101 = 5)', symTool)
-    sym7 = QAction('<<:    Shift left (ex. 2 << 2 = 8)', symTool)
-    sym8 = QAction('>>:    Shift right (ex. 8 >> 2 = 2)', symTool)
-    sym9 = QAction('|:     Bitwise OR (ex. 8 | 1 = 9)', symTool)
-    sym10 = QAction('&&:     Bitwise AND (ex. 5 && 1 = 1)', symTool)
-    sym11 = QAction('^:     Bitwise XOR (ex. 5 ^ 1 = 4)', symTool)
-    symT3 = QAction('SCIENTIFIC NOTATION', symTool)
-    sym12 = QAction('p:     Pico (ex. 1p = 1e-12)', symTool)
-    sym13 = QAction('n:     Nano (ex. 1n = 1e-9)', symTool)
-    sym14 = QAction('u:     Micro (ex. 1u = 1e-6)', symTool)
-    sym15 = QAction('m:     Milli (ex. 1m = 1e-3)', symTool)
-    sym16 = QAction('k:     Killo (ex. 1k = 1e3)', symTool)
-    sym17 = QAction('M:     Mega (ex. 1M = 1e6)', symTool)
-    sym18 = QAction('G:     Giga (ex. 1G = 1e9)', symTool)
-
-    symT0.setFont(titleFont)
-    symT1.setFont(titleFont)
-    symT2.setFont(titleFont)
-    symT3.setFont(titleFont)
-
-    syms = [symT0, sym0, sym1, symT1, sym2, sym3, sym4, symT2, sym5, sym6,
-            sym7, sym8, sym9, sym10, sym11, symT3, sym12, sym13, sym14,
-            sym15, sym16, sym17, sym18]
-
-    return syms
+    return _build_menu(symTool, SYMBOL_SECTIONS)
 
 
-# Unit Tool Button
 def populateUnitButton(unitTool: QToolButton):
-    unitT0 = QAction('LENGTH', unitTool)
-    unit0 = QAction('mm:    Millimeters', unitTool)
-    unit1 = QAction('cm:    Centimeters', unitTool)
-    unit2 = QAction('m:     Meters', unitTool)
-    unit3 = QAction('km:    Killometers', unitTool)
-    unit4 = QAction('mil:   Thousandths of an inch', unitTool)
-    unit5 = QAction('in:    Inches', unitTool)
-    unitT1 = QAction('VOLUME', unitTool)
-    unit6 = QAction('mL:    Milliliter', unitTool)
-    unit7 = QAction('L:     Liter', unitTool)
-    unit8 = QAction('tsp:   Teaspoon', unitTool)
-    unit9 = QAction('tbl:   Tablespoon', unitTool)
-    unit10 = QAction('oz:    Fluid ounce', unitTool)
-    unit11 = QAction('pt:    Pint', unitTool)
-    unit12 = QAction('qt:    Quart', unitTool)
-    unit13 = QAction('gal:   Gallon', unitTool)
-    unitT2 = QAction('MASS', unitTool)
-    unit14 = QAction('mg:    Milligram', unitTool)
-    unit15 = QAction('g:     Gram', unitTool)
-    unit16 = QAction('kg:    Killogram', unitTool)
-    unit17 = QAction('oz:    Ounce', unitTool)
-    unit18 = QAction('lbs:   Pound', unitTool)
-    unitT3 = QAction('FORCE', unitTool)
-    unit19 = QAction('N:     Newton', unitTool)
-    unit20 = QAction('kN:    Killonewton', unitTool)
-    unit21 = QAction('lbf:   Pound force', unitTool)
-    unitT4 = QAction('TEMPERATURE', unitTool)
-    unit22 = QAction('C:     Degrees celsius', unitTool)
-    unit23 = QAction('F:     Degrees farenheit', unitTool)
-    unitT5 = QAction('MEMORY', unitTool)
-    unit24 = QAction('bits:  bits', unitTool)
-    unit25 = QAction('bytes: bytes', unitTool)
-    unit26 = QAction('KB:    IEC KiB (1024 bytes)', unitTool)
-    unit27 = QAction('MB:    IEC MiB', unitTool)
-    unit28 = QAction('GB:    IEC GiB', unitTool)
-    unit29 = QAction('TB:    IEC TiB', unitTool)
-    unit30 = QAction('Kb:    killobits (1000 bits)', unitTool)
-    unit31 = QAction('Mb:    megabits', unitTool)
-    unit32 = QAction('Gb:    gigabits', unitTool)
-    unit33 = QAction('Tb:    terabits', unitTool)
-
-    unitT0.setFont(titleFont)
-    unitT1.setFont(titleFont)
-    unitT2.setFont(titleFont)
-    unitT3.setFont(titleFont)
-    unitT4.setFont(titleFont)
-    unitT5.setFont(titleFont)
-
-    units = [unitT0, unit0, unit1, unit2, unit3, unit4, unit5, unitT1,
-             unit6, unit7, unit8, unit9, unit10, unit11, unit12, unit13,
-             unitT2, unit14, unit15, unit16, unit17, unit18, unitT3,
-             unit19, unit20, unit21, unitT4, unit22, unit23, unitT5, 
-             unit24, unit25, unit26, unit27, unit28, unit29, unit30,
-             unit31, unit32, unit33]
-
-    return units
+    return _build_menu(unitTool, UNIT_SECTIONS)

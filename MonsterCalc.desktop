@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MonsterCalc
+GenericName=Scratchpad Calculator
+Comment=Live scratchpad calculator for math, units, programming, and EE work
+Exec=MonsterCalc
+Icon=monstercalc
+Terminal=false
+Categories=Utility;Science;Engineering;Development;
+Keywords=calculator;engineering;electronics;units;math;scratchpad;
+StartupNotify=true

@@ -1,1 +1,0 @@
-pyinstaller --paths C:\Users\acarro12\AppData\Local\Programs\Python\Python36\Lib\site-packages\PySide2 --icon=C:\GitHub\MonsterCalc\Monster.ico --noconsole MonsterCalc.py -F

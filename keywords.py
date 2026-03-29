@@ -42,13 +42,15 @@ unitKeys = lenKeys + volKeys + massKeys + forceKeys + memKeys + tempKeys
 # Supported functions and symbols
 funcs = ['floor', 'ceil', 'sqrt', 'log', 'log10', 'log2', 'exp',
          'sin', 'cos', 'tan', 'abs', 'asin', 'acos', 'atan',
-         'rad', 'deg', 'polar', 'rect', 'phase', 'cdf', 'pdf',
-         'hex', 'bin', 'min', 'max', 'sum', 'bitget', 'a2h',
-         'h2a', 'findres', 'findrdiv', 'rpar', 'vdiv']
-operators = ['\+', '-', '\*', '<<', '>>', '\^', '\&', '/', '=',
-             '%', '\|']
+         'rad', 'deg', 'polar', 'rect', 'phase', 'cdf', 'pdf', 'mod',
+         'hex', 'bin', 'min', 'max', 'sum', 'bitget', 'biset', 'bitset', 'a2h',
+         'h2a', 'findres', 'findrdiv', 'rpar', 'vdiv', 'findv', 'findi',
+         'findr', 'xc', 'xl', 'db', 'db10', 'fc_rc', 'tau', 'rc_charge',
+         'rc_discharge', 'ledr', 'adc', 'dac']
+operators = [r'\+', '-', r'\*', '<<', '>>', r'\^', r'\&', '/', '=',
+             '%', r'\|']
 prefix = ['0x', '0b']
 suffix = ['p', 'n', 'u', 'm', 'k', 'M', 'G']
-tweener = ['e']
+tweener = ['e', 'E']
 symbols = ['ans', 'pi', 'e']
 unusual_syms = ['to']
