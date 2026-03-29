@@ -30,8 +30,8 @@ TITLE_FONT_FAMILIES = [
     "Times New Roman",
 ]
 
-ACCENT_GREEN = "#8fab24"
-ACCENT_GREEN_BRIGHT = "#9abb2d"
+ACCENT_RED = "#ab2424"
+ACCENT_RED_BRIGHT = "#bb2d2d"
 WINDOW_BG = "#26292b"
 PANEL_BG = "#26292b"
 EDITOR_BG = "#1a1b1d"
@@ -473,7 +473,7 @@ class ScratchpadTextEdit(QPlainTextEdit):
         while block.isValid() and top <= event.rect().bottom():
             if block.isVisible() and bottom >= event.rect().top():
                 number = str(block_number + 1)
-                color = QColor(ACCENT_GREEN) if block_number == active_line else QColor(TEXT_MUTED)
+                color = QColor(ACCENT_RED) if block_number == active_line else QColor(TEXT_MUTED)
                 painter.setPen(color)
                 painter.drawText(
                     0,
@@ -798,7 +798,7 @@ class MainWidget(QWidget):
 
             QLabel#headerTitle {
                 color: """
-            + ACCENT_GREEN
+            + ACCENT_RED
             + """;
                 font-size: 20px;
                 font-weight: 700;
@@ -813,7 +813,7 @@ class MainWidget(QWidget):
                 padding: 10px;
                 selection-color: #111111;
                 selection-background-color: """
-            + ACCENT_GREEN
+            + ACCENT_RED
             + """;
             }
 
@@ -842,7 +842,7 @@ class MainWidget(QWidget):
             + BUTTON_HOVER_BG
             + """;
                 border: 1px solid """
-            + ACCENT_GREEN_BRIGHT
+            + ACCENT_RED_BRIGHT
             + """;
             }
 
@@ -875,7 +875,7 @@ class MainWidget(QWidget):
             + BUTTON_HOVER_BG
             + """;
                 border: 1px solid """
-            + ACCENT_GREEN_BRIGHT
+            + ACCENT_RED_BRIGHT
             + """;
             }
 
@@ -898,7 +898,7 @@ class MainWidget(QWidget):
             }
 
             QMenu::item:selected {
-                background-color: #30381b;
+                background-color: #381b1b;
                 color: #f7f7f7;
             }
 

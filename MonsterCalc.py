@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
             }
 
             QMenu::item:selected {
-                background-color: #30381b;
+                background-color: #381b1b;
             }
 
             QStatusBar {
